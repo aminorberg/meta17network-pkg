@@ -8,18 +8,16 @@
 #' @export
 
 set_dirs <- function(working_dir,
-                     fit_fold = "fits",
-                     raw_data = TRUE)
+                     fit_fold = "fits")
 {
     res <- structure(list(), class = "dirlist")
 
     res$wd <- working_dir
     res$fits <- file.path(working_dir, fit_fold)
     res$figs <- file.path(working_dir, "figs")
-    if (raw_data) {
-        res$dat <- file.path(working_dir, "data")
-        res$mod_dat <- file.path(working_dir, "mod_data")
-    }    
+    res$dat <- file.path(working_dir, "data")
+    res$aland <- file.path(working_dir, "data", "aland")
+    res$mod_dat <- file.path(working_dir, "mod_data")
     
     return(res)
 }

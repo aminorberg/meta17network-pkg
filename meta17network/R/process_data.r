@@ -12,6 +12,13 @@ process_data <- function(dirs,
                          rmNAs = TRUE)
 {
 
+    # aland data
+    ######################################################################################
+    load(file.path(dirs$aland, "ComplexMapAland.Rdata")) #map_aland2
+    load(file.path(dirs$aland, "SpatialDataPatchesAndRoads.Rdata")) #patches and roads
+    metapops <- read.csv(file = file.path(dirs$aland, "Metapopdata2Anna.csv"))
+    aland <- list(map_aland = map_aland2, patches = patches, roads = roads, metapops = metapops)
+
     # environmental and host-related variables
     ######################################################################################
     
@@ -369,7 +376,8 @@ process_data <- function(dirs,
                 X = X, 
                 phylogeny = virus_phyl_tree, 
                 population_locations = poplocs, 
-                vegetation = vegetation)
+                vegetation = vegetation,
+                aland = aland)
 
     if (save_data) {
         saveRDS(dat, file = file.path(dirs$mod_dat, "dat.rds"))
