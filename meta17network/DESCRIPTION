@@ -14,10 +14,27 @@ Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1.9000
-Imports: MRFcov, dummies, devtools, vegan, ape, adespatial
+Imports: 
+    MRFcov, 
+    dummies, 
+    devtools, 
+    vegan, 
+    ape, 
+    adespatial, 
+    caret, 
+    dplyr, 
+    cooccur, 
+    betapart
 Suggests: 
     circleplot,
     RColorBrewer,
     wesanderson,
     matrixcalc,
-    plot.matrix
+    plot.matrix,
+    rgdal,
+    autoimage,
+    raster,
+    sf,
+    units,
+    smoothr,
+    spMaps
