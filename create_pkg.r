@@ -23,4 +23,5 @@ document()
 setwd(working_dir)
 install("meta17network")
 
-#library("meta17network")
+library("meta17network")
+

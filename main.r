@@ -28,32 +28,196 @@ png(file.path(dirs$figs, "prevalences.png"),
     barplot(colSums(dat$Y)[order(colSums(dat$Y))], las = 2, ylim = c(0, 150))
 dev.off()
 
-# 301112
-# tee nestedness matriisi! Rynkiewicz et al 2019
+# order plants according to their spatial proximity (first plant selected randomly)
+distsXY <- as.matrix(dist(dat$X[, c("x", "y")], diag = FALSE))
+rownames(distsXY) <- dat$X$sampleID
+colnames(distsXY) <- rownames(distsXY)
+diag(distsXY) <- NA
 
+Y_dist_ord_ls <- list()
+startPlant <- list()
+for (n in 1:100) {
+    startPlant[[n]] <- sample(1:nrow(dat$Y), 1)
+    Y_dist_ord <- dat$Y[startPlant[[n]],]
+    distsXY_tmp <- distsXY
+    for (i in 1:(nrow(distsXY)-1)) {
+        focalPlant <- which(distsXY_tmp[startPlant[[n]], ] == min(distsXY_tmp[startPlant[[n]], ], 
+                                                              na.rm = TRUE))
+        #print(focalPlant)
+        if (length(focalPlant) > 1) {
+            focalPlant <- focalPlant[1]
+        }
+        distsXY_tmp[startPlant[[n]],focalPlant] <- NA
+        Y_dist_ord <- rbind(Y_dist_ord, dat$Y[focalPlant,])        
+    }
+Y_dist_ord_ls[[n]] <- Y_dist_ord
+}
+Y_dist_ord_ls_mat <- lapply(Y_dist_ord_ls, as.matrix)
+
+insidSumS <- NA
+insidSumS2 <- NA
+insids <- list()
+insids2 <- list()
+sp_area <- list()
+for (m in 1:length(Y_dist_ord_ls)) {        
+
+    insids[[1]] <- as.matrix(Y_dist_ord_ls_mat[[m]][1,]) %*% t(Y_dist_ord_ls_mat[[m]][1,])
+    tmp <- insids[[1]]
+    tmp[upper.tri(tmp, diag = TRUE)] <- 0
+    insidsSum <- sum(tmp > 0)
+
+    tmp_comm_mat <- 1 * (apply(Y_dist_ord_ls_mat[[m]], 2, cumsum) > 0)
+    insids2[[1]] <- as.matrix(tmp_comm_mat[1,]) %*% t(tmp_comm_mat[1,])
+    tmp2 <- insids2[[1]]
+    tmp2[upper.tri(tmp2, diag = TRUE)] <- 0
+    insidsSum2 <- sum(tmp2 > 0)
+    
+    
+    for (n in 2:nrow(Y_dist_ord_ls_mat[[1]])) {
+        insids[[n]] <- t(Y_dist_ord_ls_mat[[m]][1:n,]) %*% Y_dist_ord_ls_mat[[m]][1:n,]        
+        tmp <- insids[[n]]
+        tmp[upper.tri(tmp, diag = TRUE)] <- 0
+        tmp <- sum(tmp > 0)
+        insidsSum <- c(insidsSum, tmp)
+        
+        insids2[[n]] <- t(tmp_comm_mat[1:n,]) %*% tmp_comm_mat[1:n,]
+        tmp2 <- insids2[[n]]
+        tmp2[upper.tri(tmp2, diag = TRUE)] <- 0
+        tmp2 <- sum(tmp2 > 0)
+        insidsSum2 <- c(insidsSum2, tmp2)
+    }
+sp_area[[m]] <- apply(Y_dist_ord_ls_mat[[m]], 2, cumsum)
+insidSumS <- cbind(insidSumS, insidsSum)
+insidSumS2 <- cbind(insidSumS2, insidsSum2)
+}
+insidSumS <- insidSumS[,-1]
+insidSumS2 <- insidSumS2[,-1]
+
+plot(rowMeans(insidSumS2))
+lines(rowMeans(insidSumS2))
+
+tmp1 <- t(dat$Y) %*% as.matrix(dat$Y)
+tmp1["Avsunviroidae","Alphasatellitidae"] # the only viruses that never co-occur together
+# hence the maximum amount of co-occurring pairs is 299
+
+png(file.path(dirs$figs, "coex2_mean_curve.png"),
+    height = 4, 
+    width = 7, 
+    bg = "transparent",
+    units = "in", 
+    res = 300)
+    par(family = "serif", mar = c(3,3,1,1))
+    plot(y = insidSumS2[,1], x = 1:nrow(insidSumS2), 
+         type = "l",
+         lwd = 1.5,
+         lty = 3, 
+         ylab = "", 
+         xlab = "")
+#    for (i in 2:ncol(insidSumS)) {
+#        lines(y = insidSumS[,i], 
+#        x = 1:nrow(insidSumS),
+#        lwd = 1.5)
+#    }
+dev.off()
+
+png(file.path(dirs$figs, "coex_mean_curve_new.png"),
+    height = 4, 
+    width = 7, 
+    bg = "transparent",
+    units = "in", 
+    res = 300)
+    par(family = "serif", mar = c(3,3,1,1))
+    plot(y = insidSumS[,1], x = 1:nrow(insidSumS), 
+         type = "l",
+         lwd = 1.5,
+         lty = 1, 
+         ylab = "", 
+         xlab = "")
+#    for (i in 2:ncol(insidSumS)) {
+#        lines(y = insidSumS[,i], 
+#        x = 1:nrow(insidSumS),
+#        lwd = 1.5)
+#    }
+dev.off()
+
+png(file.path(dirs$figs, "coex_mean_curve.png"),
+    height = 4, 
+    width = 7, 
+    bg = "transparent",
+    units = "in", 
+    res = 300)
+    par(family = "serif", mar = c(3,3,1,1))
+    plot(y = insidSumS[,1], x = 1:nrow(insidSumS), 
+         type = "n",
+         #ylim = c(0, 300), xlim = c(1, 400), 
+         #xaxt = "n",
+         #yaxt = "n", 
+         lwd = 1.5, 
+         ylab = "", 
+         xlab = "")
+#    for (i in 2:ncol(insidSumS)) {
+#        lines(y = insidSumS[,i], 
+#        x = 1:nrow(insidSumS),
+#        lwd = 1.5)
+#    }
+    lines(y = rowMeans(insidSumS),
+          x = 1:nrow(insidSumS),
+          #col = "red3",
+          lwd = 2)
+dev.off()
+
+tmp <- lapply(lapply(sp_area, function(x){(x > 0) * 1}), rowSums)
+sp_area <- simplify2array(tmp)
+
+png(file.path(dirs$figs, "sp_area_mean_curve.png"),
+    height = 4, 
+    width = 7, 
+    bg = "transparent",
+    units = "in", 
+    res = 300)
+    par(family = "serif", mar = c(3,3,1,1))
+    plot(y = rowMeans(sp_area), x = 1:nrow(sp_area), 
+         type = "n",
+         #ylim = c(0, 300), xlim = c(1, 400), 
+         #xaxt = "n",
+         #yaxt = "n",
+         lty = 2, 
+         lwd = 1.5, 
+         ylab = "", 
+         xlab = "")
+#    for (i in 2:ncol(insidSumS)) {
+#        lines(y = rowSums((sp_area[[i]] > 0)), 
+#        x = 1:length(rowSums((sp_area[[i]] > 0))),
+#        lwd = 1.5,
+#        lty = 2)
+#    }
+    lines(y = rowMeans(sp_area),
+          x = 1:nrow(sp_area),
+          lwd = 2,
+          #col = "red3",
+          lty = 2)
+dev.off()
+
+
+# 1.1 Nestedness analysis
+# (see e.g. Rynkiewicz et al 2019)
 
 library(vegan)
-library(betapart)
-?nestednodf
-
-nest <- nestednodf(dat$Y)
-plot(nest, names = TRUE, col = "grey50")
-
-vegan:::oecosimu
-oecosimu(dat$Y, nestedchecker, "r0")
-oecosimu(dat$Y, nestedchecker, "r00", statistic = "C.score")
-
-checkers <- list()
+nest_plants <- nestednodf(dat$Y)
+oecosimu(dat$Y, nestedchecker, "r0", statistic = "C.score")
+# Function nestedchecker gives the number of checkerboard units, 
+# or 2x2 submatrices where both species occur once but on different sites 
+# (Stone & Roberts 1990)
+ 
+# nestedness within populations
 nests <- list()
 pops <- unique(dat$X[, "pop"])
 for (i in 1:length(pops)) {
-#    checkers[[i]] <- oecosimu(dat$Y[which(dat$X[, "pop"] == pops[i]),], 
-#                              nestedchecker, "r00", 
-#                              statistic = "C.score")
     nests[[i]] <- nestednodf(dat$Y[which(dat$X[, "pop"] == pops[i]),])
 }
 plot(nests[[20]], names = TRUE, col = "grey50")
 
+# nestedness over populations
 aggr_tmp <- NA
 for (i in unique(dat$X$pop)) {
     aggr_tmp <- rbind(aggr_tmp, colSums(dat$Y[which(dat$X$pop == i), ]))
@@ -62,10 +226,10 @@ Y_aggr_pops <- aggr_tmp[-1,]
 Y_aggr_pops[which(Y_aggr_pops > 0)] <- 1
 rownames(Y_aggr_pops) <- unique(dat$X$pop)
 
-nest <- nestednodf(Y_aggr_pops)
-plot(nest, names = TRUE, col = "grey50")
-oecosimu(Y_aggr_pops, nestedchecker, "r00", statistic = "C.score")
+nest_pops <- nestednodf(Y_aggr_pops)
+oecosimu(Y_aggr_pops, nestedchecker, "r0", statistic = "C.score")
 
+### FIGURE 2B #####
 png(file.path(dirs$figs, "nestedness_bypop.png"),
     height = 6, 
     width = 6, 
@@ -73,80 +237,29 @@ png(file.path(dirs$figs, "nestedness_bypop.png"),
     units = "in", 
     res = 300)
     par(family = "serif", mar = c(1,3,8,1))
-    plot_nest(nest, names = TRUE, col = "grey50", bty = "n")
+    plot(nest_pops, names = TRUE, col = "grey50", bty = "n")
 dev.off()
-vegan:::plot.nestednodf
-checkers[1]
-checkers2[5]
-?oecosimu
-library(EcoSimR)
-species_combo(t(dat$Y[which(dat$X[, "pop"] == pops[10]),]))
+###################
 
+# 1.1 Co-occurrence illustration and analysis
+library(EcoSimR)
+
+c_score(t(dat$Y))
+species_combo(t(dat$Y[which(dat$X[, "pop"] == pops[10]),]))
 species_combo(t(dat$Y))
 checker(t(dat$Y))
 
-combn(1:25, 2)
+# which of the populations are the most species poor and species rich?
+which(rowSums(Y_aggr_pops) == max(rowSums(Y_aggr_pops)))
+which(rowSums(Y_aggr_pops) == min(rowSums(Y_aggr_pops)))
 
-as.matrix(dat$Y[which(dat$X[, "pop"] == pops[15]),])
-
-# 1.2 Co-occurrence analysis
-# species pairs with expected no. of co-occurrences <1 removed automatically
-#res_cooc <- do_cooccur(Y = dat$Y, POPs = dat$X$pop, dirs = dirs)
-#saveRDS(res_cooc, file = file.path(dirs$fits, "res_cooc.rds"))
-#res_cooc <- readRDS(file = file.path(dirs$fits, "res_cooc.rds"))
-#names(res_cooc)
-#str(res_cooc$cooccur_full_data)
-#str(res_cooc$cooccur_population_aggr)
-#names(res_cooc$significants)
-#lapply(res_cooc$significants, dim)
-#res_cooc$significants$full_data
-#res_cooc$significants$populations_aggregated
-
-# 1.2 Host population level beta diversity
-multi_betas <- do_beta_multi(Y = dat$Y, 
-                             POPs = dat$X$pop, 
-                             dirs = dirs)
-saveRDS(multi_betas, file = file.path(dirs$fits, "beta_multi_diversity.rds"))
-
-pairw_betas <- do_beta_pair(Y = dat$Y, 
-                            POPs = dat$X$pop, 
-                            dirs = dirs)
-saveRDS(pairw_betas, file = file.path(dirs$fits, "beta_pairw_diversity.rds"))
-
-
-# look into the contrasting ones: what causes the variation at the population level?
-mean(pairw_betas$by_pop[["861"]]$beta.sor, na.rm = T)
-mean(pairw_betas$by_pop[["3225"]]$beta.sor, na.rm = T)
-# populations 861 vs. 3225 are the most contrasting ones
-
+### FIGURE 2C-D #####
 library(corrplot)
-
-wpop <- "3222"
-incids <- t(dat$Y[which(dat$X$pop == wpop),]) %*% as.matrix(dat$Y[which(dat$X$pop == wpop),])
-
-png(file.path(dirs$figs, paste0("co_occs_pop", wpop, ".png")),
-    height = 10, 
-    width = 8, 
-    bg = "transparent",
-    units = "in", 
-    res = 300)
-    par(family = "serif", mar = c(0,5,5,5))
-    corrplot(incids, 
-             is.corr = FALSE,
-             method = "number",
-             type = "lower",
-             order = "AOE",
-             tl.col = "black",
-             cl.pos = "n",
-             addgrid.col = "black",
-             col = colorRampPalette(c("white","black"))(100))
-dev.off()
-
 virus_colrs <- load_colour_palette()
 virus_colrs <- virus_colrs[[1]][1:25]
-
+# the two most contrasting populations are 861 and 3222
 wpop <- "861"
-wpop <- "3222"
+#wpop <- "3222"
 toPLot <- dat$Y[which(dat$X$pop == wpop),]
 png(file.path(dirs$figs, paste0("viruses_by_plant_pop", wpop, ".png")),
     height = 4, 
@@ -172,6 +285,30 @@ png(file.path(dirs$figs, "viruses_by_plant_pop_legend.png"),
     plot(rep(1, 10), y = 1:10, type = "n", xaxt = "n", yaxt = "n", bty = "n")
     legend(x = 1, y = 10, legend = colnames(dat$Y), fill = virus_colrs)
 dev.off()
+#####################
+
+# virus (co)incidences at the contrasting populations
+wpop <- "861"
+#wpop <- "3222"
+incids <- t(dat$Y[which(dat$X$pop == wpop),]) %*% as.matrix(dat$Y[which(dat$X$pop == wpop),])
+png(file.path(dirs$figs, paste0("co_occs_pop", wpop, ".png")),
+    height = 10, 
+    width = 8, 
+    bg = "transparent",
+    units = "in", 
+    res = 300)
+    par(family = "serif", mar = c(0,5,5,5))
+    corrplot(incids, 
+             is.corr = FALSE,
+             method = "number",
+             type = "lower",
+             order = "AOE",
+             tl.col = "black",
+             cl.pos = "n",
+             addgrid.col = "black",
+             col = colorRampPalette(c("white","black"))(100))
+dev.off()
+
 
 # coinfections per population
 coinfs <- coinfs_by_pop(Y = dat$Y, 
@@ -197,9 +334,7 @@ all_coinfs <- table(sort(unlist(all_coinfs)))
 all_coinfs <- all_coinfs[order(all_coinfs)]
 saveRDS(all_coinfs, file = file.path(dirs$fits, "all_coinfs.rds"))
 
-# 1.3 Data processing for ordinations and  (C)MRF mocdelling
-
-# 1.3.1 Individual plant level
+# 1.3 Data processing for incidence-matrix, ordinations and (C)MRF mocdelling
 
 ## Y
 y_all <- as.matrix(dat$Y)
@@ -208,6 +343,7 @@ y_all_cocs[upper.tri(y_all_cocs)] <- NA
 diag(y_all_cocs) <- NA
 which(y_all_cocs == 0, arr.ind = TRUE)
 # only one pair never coexists: Avsunviroidae and Alphasatellitidae
+colSums(y_all[rowSums(y_all) == 1,]) # single infections
 
 sp_subset_thr <- round(nrow(dat$Y) * 0.025) # 10
 sp_subset <- colnames(dat$Y)[colSums(dat$Y) >= sp_subset_thr]
@@ -218,15 +354,17 @@ y_cocs <- t(y) %*% y
 #y_cocs[upper.tri(y_cocs)] <- NA
 #diag(y_cocs) <- NA
 
+# incidences in the subsetted data
+### FIGURE 3A #####
 library(corrplot)
-png(file.path(dirs$figs, "co_occs.png"),
-    height = 10, 
-    width = 8, 
+png(file.path(dirs$figs, "co_occs_all.png"),
+    height = 11, 
+    width = 9, 
     bg = "transparent",
     units = "in", 
     res = 300)
     par(family = "serif", mar = c(0,5,5,5))
-    corrplot(y_cocs, 
+    corrplot(y_all_cocs, 
              is.corr = FALSE,
              method = "number",
              type = "lower",
@@ -236,6 +374,7 @@ png(file.path(dirs$figs, "co_occs.png"),
              addgrid.col = "black",
              col = colorRampPalette(c("white","black"))(100))
 dev.off()
+###################
 
 # coinfections in the subsetted data
 y_coinfs <- y
@@ -286,137 +425,67 @@ colnames(x_facs) <- "pop"
 x_facs$pop <- as.factor(x_facs$pop)
 x_spat <- x[, c("x", "y", "x_pop", "y_pop")]
 
-#1.3.2 Population level
-# Y
-#y_pop <- cbind(x_facs$pop, y)
-#
-#y_pop <- NA
-#for (pop in unique(x_facs$pop)) {
-#   tmp1 <- colSums(y[which(x_facs$pop == pop),])
-#   y_pop <- rbind(y_pop, tmp1)
-#}
-#y_pop <- y_pop[-1,]
-#y_pop_pa <- (y_pop > 0) * 1
-#colSums(y_pop_pa)/nrow(y_pop_pa)
-
-# X
-#x_nums_pop <- NA
-#for (pop in unique(x_facs$pop)) {
-#   tmp1 <- colMeans(x_nums[which(x_facs$pop == pop),])
-#   x_nums_pop <- rbind(x_nums_pop, tmp1)
-#}
-#x_nums_pop <- x_nums_pop[-1,]
-#x_nums_pop_scaled <- scale(x_nums_pop)
-#
-#x_bools_pop <- NA
-#for (pop in unique(x_facs$pop)) {
-#   tmp1 <- colSums(x_bools[which(x_facs$pop == pop),])
-#   x_bools_pop <- rbind(x_bools_pop, tmp1)
-#}
-#x_bools_pop <- x_bools_pop[-1,]
-
-
 # 1.3.3 Spatial eigenvector maps
-
-## sample level
 mor_nonnull <- adespatial::dbmem(x_spat[, c("x", "y")], 
                                  store.listw = FALSE,
                                  MEM.autocor = "non-null")
-
 mems1 <- cbind(mor_nonnull$MEM1, 
                mor_nonnull$MEM2, 
                mor_nonnull$MEM3, 
                mor_nonnull$MEM4)
-     
-## population level
-#mor_pop_nonnull <- adespatial::dbmem(unique(x_spat[, c("x_pop", "y_pop")]), 
-#                                     store.listw = FALSE, 
-#                                     MEM.autocor = "non-null")
-#mems1_pop <- cbind(mor_pop_nonnull$MEM1, 
-#                   mor_pop_nonnull$MEM2, 
-#                   mor_pop_nonnull$MEM3, 
-#                   mor_pop_nonnull$MEM4)
+apply(mems1,2,max)
 
+ade4::s.value(x_spat[, c("x", "y")], mor_nonnull[, 1])
+
+
+
+png(file.path(dirs$figs,
+              "MEMs.png"), 
+    height = 10, 
+    width = 10, 
+    bg = "transparent",
+    units = "in", 
+    res = 300)
+    par(mar = c(1, 1, 1, 1), family = "serif")
+    plot(mor_nonnull[, 1:4], 
+         SpORcoords = x_spat[, c("x", "y")], 
+         "pbackground.col" = "transparent")
+dev.off()
+     
 ## combine Xs
 x_and_mems <- as.data.frame(cbind(x_nums_scaled, x_bools, mems1))
-#x_and_mems_pop <- as.data.frame(cbind(x_nums_pop_scaled, x_bools_pop, mems1_pop))
 
 # 1.3.4 Check for correlations
-
-# sample level
 var_cors <- cor(x_and_mems, use = "na.or.complete")
 max(var_cors[upper.tri(var_cors, diag = FALSE)]) # highest correlation 0.56
 
-# population level
-#var_pop_cors <- cor(x_and_mems_pop, use = "na.or.complete")
-#max(var_pop_cors[upper.tri(var_pop_cors, diag = FALSE)]) # highest correlation 0.63
 
 # 1.3.5 Final data frames
-
-## sample level
 data_df <- as.data.frame(cbind(y, cbind(x_nums_scaled, x_bools)))
+data_host_df <- data_df[, c(1:17,20,24:28)]
+data_habi_df <- data_df[, c(1:16,18:19,21:23)]
 data_mems_df <- as.data.frame(cbind(y, x_and_mems))
 data_only_mems_df <- as.data.frame(cbind(y, mems1))
 
-## population level
-#data_pop_df <- as.data.frame(cbind(y_pop, cbind(x_nums_pop_scaled, x_bools_pop)))
-#data_pop_mems_df <- as.data.frame(cbind(y_pop, x_and_mems_pop))
-#data_pop_only_mems_df <- as.data.frame(cbind(y_pop, mems1_pop))
-
-
-
-# 2 Exploratory analysis
-# 2.1 RDA
+# 2 NMDS
 library(vegan)
-head(dat$X)
-
-popcols <- seq(1, 100, length.out = length(unique(dat$X$pop)))
-popcols <- paste0("gray", round(popcols))
-colfunc <- colorRampPalette(c("black", "white"))
-popcols <- colfunc(20)
-
-plot(pca_1, 
-     type = "n", 
-     ylim = c(-1.75, 0.25),
-     scaling = "species")
-points(pca_1, dis = "sites", scaling = "sites", col = popcols, pch = 16)
-text(pca_1, dis = "sp", scaling = "sites")
-
-head(x_and_mems)
-head(dat$X)
-
-plot(pca_1, scaling="sites", correlation = TRUE, type = "text")
-
-rda_1 <- rda(X = dat$Y, Y = x_and_mems)
-RsquareAdj(rda_1)$r.squared
-RsquareAdj(rda_1)$adj.r.squared
-plot(rda_1)
-summary(rda_1)
-
-# 2.2 NMDS
-library(vegan)
-
 set.seed(7)
-
 y_no0rows <- y[-which(rowSums(y) == 0),]
 
 nmds_k3_jac <- metaMDS(y_no0rows, 
                        distance = "jaccard",
                        k = 3, 
                        try = 100) 
-saveRDS(nmds_k3_jac, file = file.path(dirs$fits, "nmds_k3_jac.rds"))
 stressplot(nmds_k3_jac, main = "3D")
-goodness(nmds_k3_jac)
 
 nmds_k2_jac <- metaMDS(y_no0rows, 
                        distance = "jaccard",
                        k = 2, 
                        try = 100) 
 stressplot(nmds_k2_jac, main = "2D")
-goodness(nmds_k2_jac)
 
 # k = 3 is better
-
+saveRDS(nmds_k3_jac, file = file.path(dirs$fits, "nmds_k3_jac.rds"))
 nmds_k3_jac <- readRDS(file = file.path(dirs$fits, "nmds_k3_jac.rds"))
 
 png(file.path(dirs$figs, "nmds_k3_jac.png"),
@@ -433,7 +502,6 @@ png(file.path(dirs$figs, "nmds_k3_jac.png"),
     text(nmds_k3_jac, dis = "sp", cex = 1.5)
 dev.off()
 
-
 # calculate axis loadings for each virus
 vec_sp <- envfit(nmds_k3_jac$points, 
                  y_no0rows,
@@ -448,124 +516,111 @@ library(MRFcov)
 ?MRFcov
 
 # 3.1 Unconditional MRF
-
-## sample level
 mrf1 <- MRFcov(as.data.frame(y), family = "binomial")
 saveRDS(mrf1, file = file.path(dirs$fits, "mrf1.rds"))
-
-## population level
-#mrf1_pop <- MRFcov(as.data.frame(y_pop), family = "poisson")
-#saveRDS(mrf1_pop, file = file.path(dirs$fits, "mrf1_pop.rds"))
 
 # 3.2 Conditional MRF: non-spatial, spatial, spatial using Moran's eigenvectors,
 # the last one with and without other environmental covariates
 
 # 3.2.1 Non-spatial CRF
 
-## sample level
+### with all environmental variables
 crf1 <- MRFcov(data_df, family = "binomial", n_nodes = 16)
 saveRDS(crf1, file = file.path(dirs$fits, "crf1.rds"))
 
-## population level
-#crf1_pop <- MRFcov(data_pop_df, family = "poisson", n_nodes = 16)
-#saveRDS(crf1_pop, file = file.path(dirs$fits, "crf1_pop.rds"))
+### with only host variables
+crf1_host <- MRFcov(data_host_df, family = "binomial", n_nodes = 16)
+saveRDS(crf1_host, file = file.path(dirs$fits, "crf1_host.rds"))
 
-# 3.2.2 Spatial CRF
+### with only habitat variables
+crf1_habi <- MRFcov(data_habi_df, family = "binomial", n_nodes = 16)
+saveRDS(crf1_habi, file = file.path(dirs$fits, "crf1_habi.rds"))
 
-## sample level
-### with plant level coordinates
-crf1_spat1 <- MRFcov_spatial(data_df, 
-                             coords = x_spat[, c("x", "y")], 
-                             family = "binomial", 
-                             n_nodes = 16)
-saveRDS(crf1_spat1, file = file.path(dirs$fits, "crf1_spat1.rds"))
-
-### population level coordinates
-#crf1_spat2 <- MRFcov_spatial(data_df, 
-#                             coords = x_spat[, c("x_pop", "y_pop")], 
-#                             family = "binomial", 
-#                             n_nodes = 16)
-#saveRDS(crf1_spat2, file = file.path(dirs$fits, "crf1_spat2.rds"))
-#
-### population level
-#crf1_pop_spat1 <- MRFcov_spatial(data_pop_df, 
-#                                 coords = unique(x_spat[, c("x_pop", "y_pop")]), 
-#                                 family = "poisson", 
-#                                 n_nodes = 16)
-#saveRDS(crf1_pop_spat1, file = file.path(dirs$fits, "crf1_pop_spat1.rds"))
-
-# 3.2.3 Spatial CRF with Morans' eigenvectors
-
-## sample level
-### with environment
-crf1_mem <- MRFcov(data_mems_df, family = "binomial", n_nodes = 16)
-saveRDS(crf1_mem, file = file.path(dirs$fits, "crf1_mem.rds"))
-
+# 3.2.2 Spatial CRF with Morans' eigenvectors
 
 ### only MEMs
 crf1_only_mem <- MRFcov(data_only_mems_df, family = "binomial", n_nodes = 16)
 saveRDS(crf1_only_mem, file = file.path(dirs$fits, "crf1_only_mem.rds"))
 
-#population level
-## with environment
-#crf1_pop_mem <- MRFcov(data_pop_mems_df, family = "poisson", n_nodes = 16)
-#saveRDS(crf1_pop_mem, file = file.path(dirs$fits, "crf1_pop_mem.rds"))
-#
-## only MEMs
-#crf1_pop_only_mem <- MRFcov(data_pop_only_mems_df, family = "poisson", n_nodes = 16)
-#saveRDS(crf1_pop_only_mem, file = file.path(dirs$fits, "crf1_pop_only_mem.rds"))
+### with environment
+crf1_mem <- MRFcov(data_mems_df, family = "binomial", n_nodes = 16)
+saveRDS(crf1_mem, file = file.path(dirs$fits, "crf1_mem.rds"))
+
 
 # 3.3 Predictions
 # (load the previously fitted models)
-
-## (sample level)
 mrf1 <- readRDS(file = file.path(dirs$fits, "mrf1.rds"))
 crf1 <- readRDS(file = file.path(dirs$fits, "crf1.rds"))
-crf1_spat1 <- readRDS(file = file.path(dirs$fits, "crf1_spat1.rds"))
-crf1_spat2 <- readRDS(file = file.path(dirs$fits, "crf1_spat2.rds"))
-crf1_mem <- readRDS(file = file.path(dirs$fits, "crf1_mem.rds"))
+crf1_host <- readRDS(file = file.path(dirs$fits, "crf1_host.rds"))
+crf1_habi <- readRDS(file = file.path(dirs$fits, "crf1_habi.rds"))
 crf1_only_mem <- readRDS(file = file.path(dirs$fits, "crf1_only_mem.rds"))
+crf1_mem <- readRDS(file = file.path(dirs$fits, "crf1_mem.rds"))
 
-## (population level)
-#mrf1_pop <- readRDS(file = file.path(dirs$fits, "mrf1_pop.rds"))
-#crf1_pop <- readRDS(file = file.path(dirs$fits, "crf1_pop.rds"))
-#crf1_pop_spat1 <- readRDS(file = file.path(dirs$fits, "crf1_pop_spat1.rds"))
-#crf1_pop_mem <- readRDS(file = file.path(dirs$fits, "crf1_pop_mem.rds"))
-#crf1_pop_only_mem <- readRDS(file = file.path(dirs$fits, "crf1_pop_only_mem.rds"))
-
-## sample level
+# make predictions
 preds_mrf1 <- predict_MRF(data_df, mrf1)
 preds_crf1 <- predict_MRF(data_df, crf1)
-preds_crf1_spat1 <- predict_MRF(data_df, crf1_spat1)
-preds_crf1_spat2 <- predict_MRF(data_df, crf1_spat2)
-preds_crf1_mem <- predict_MRF(data_mems_df, crf1_mem)
+preds_crf1_host <- predict_MRF(data_host_df, crf1_host)
+preds_crf1_habi <- predict_MRF(data_habi_df, crf1_habi)
 preds_crf1_only_mem <- predict_MRF(data_only_mems_df, crf1_only_mem)
+preds_crf1_mem <- predict_MRF(data_mems_df, crf1_mem)
 
-## population level
-#preds_mrf1_pop <- predict_MRF(data_pop_df, mrf1_pop)
-#preds_crf1_pop <- predict_MRF(data_pop_df, crf1_pop)
-#preds_crf1_pop_spat1 <- predict_MRF(data_pop_df, crf1_pop_spat1)
-#preds_crf1_pop_mem <- predict_MRF(data_pop_mems_df, crf1_pop_mem)
-#preds_crf1_pop_only_mem <- predict_MRF(data_pop_only_mems_df, crf1_pop_only_mem)
 
 # 3.4 Model fit evaluation
 
-## AUCs for sample level
-pROC::auc(response = matrix(y, ncol = 1), 
-          predictor = matrix(preds_mrf1$Probability_predictions, ncol = 1))
-pROC::auc(response = matrix(y, ncol = 1),
-          predictor = matrix(preds_crf1$Probability_predictions, ncol = 1))
-#pROC::auc(response = matrix(y, ncol = 1), 
-#          predictor = matrix(preds_crf1_spat1$Probability_predictions, ncol = 1))
-#pROC::auc(response = matrix(y, ncol = 1), 
-#          predictor = matrix(preds_crf1_spat2$Probability_predictions, ncol = 1))
-pROC::auc(response = matrix(y, ncol = 1),       # seems to be the best (marginally)
-          predictor = matrix(preds_crf1_mem$Probability_predictions, ncol = 1))
-pROC::auc(response = matrix(y, ncol = 1),  
-          predictor = matrix(preds_crf1_only_mem$Probability_predictions, ncol = 1))
-
+# 3.4.1 AUCs for sample level
+aucs <- list("mrf" = NA, 
+             "crf_env" = NA, 
+             "crf_host" = NA, 
+             "crf_habi" = NA, 
+             "crf_only_mem" = NA, 
+             "crf_env_mem" = NA)
+aucs$mrf <- pROC::auc(response = matrix(y, ncol = 1), 
+                      predictor = matrix(preds_mrf1$Probability_predictions, ncol = 1))
+aucs$crf_env <- pROC::auc(response = matrix(y, ncol = 1),
+                          predictor = matrix(preds_crf1$Probability_predictions, ncol = 1))
+aucs$crf_env_mem <- pROC::auc(response = matrix(y, ncol = 1),       # seems to be the best (marginally)
+                              predictor = matrix(preds_crf1_mem$Probability_predictions, ncol = 1))
+aucs$crf_only_mem <- pROC::auc(response = matrix(y, ncol = 1),  
+                               predictor = matrix(preds_crf1_only_mem$Probability_predictions, ncol = 1))
+aucs$crf_host <- pROC::auc(response = matrix(y, ncol = 1),  
+                           predictor = matrix(preds_crf1_host$Probability_predictions, ncol = 1))
+aucs$crf_habi <- pROC::auc(response = matrix(y, ncol = 1),  
+                           predictor = matrix(preds_crf1_habi$Probability_predictions, ncol = 1))
+aucs
 # CRF is better than just MRF, but there is no big difference
-# whether one includes spatial predictors and/or environment
+# whether one includes spatial predictors and/or landscape and/or host variables
+
+# 3.4.2 calculating Tjur R2s
+    # Tjur R2 : for each of the two categories of the dependent variable, 
+    # calculate the mean of the predicted probabilities of an event,
+    # then, take the difference between those two means.
+probs <- list("env_and_mems" = preds_crf1_mem$Probability_predictions,
+              "only_mems" = preds_crf1_only_mem$Probability_predictions,
+              "only_env" = preds_crf1$Probability_predictions,
+              "only_host" = preds_crf1_host$Probability_predictions,
+              "only_habi" = preds_crf1_habi$Probability_predictions,
+              "mrf" = preds_mrf1$Probability_predictions)
+tjuR2s <- list()
+for (p in 1:length(probs)) {
+    tmp <- NA
+    for (i in 1:ncol(y)){                       # for all species separately
+        tmp <- c(tmp, mean(probs[[p]][,i][y[,i] == 1]) - mean(probs[[p]][,i][y[,i] == 0]))            
+    }
+    tjuR2s[[p]] <- matrix(tmp[-1], ncol = 1)
+    rownames(tjuR2s[[p]]) <- colnames(y)
+}
+lapply(tjuR2s, mean)
+
+# plot(x=tjuR2s[[6]],tjuR2s[[1]])
+
+plot(x = 1:length(tjuR2s), y = seq(0, 0.5, length.out = length(tjuR2s)), type = "n", xaxt = "n", xlab = "", ylab = "Tjur R^2")
+for (i in 1:length(tjuR2s)) {
+    points(x = rep(i, times = length(tjuR2s[[i]])), y = tjuR2s[[i]], pch = 21, bg = "grey")
+    points(x = i, y = mean(tjuR2s[[i]]), pch = 21, bg = "red3", cex = 1.5)
+}
+#mean(probs[[1]][y == 1]) - mean(probs[[1]][y == 0])   # for the whole data
+
+# 3.4.3 Cross-validation
 ?cv_MRF_diag
 
 # environment and MEMs
@@ -607,11 +662,41 @@ crf_only_env_cv <- lapply(seq_len(100),
                                                    family = "binomial", 
                                                    compare_null = FALSE, 
                                                    plot = FALSE, 
-                                                   cached_model = crf1_only_mem, 
+                                                   cached_model = crf1, 
                                                    cached_predictions = list(predictions = preds_crf1), 
                                                    sample_seed = 10)
                                      })
 crf_only_env_cv <- do.call(rbind, crf_only_env_cv)
+
+# only host
+crf_only_host_cv <- lapply(seq_len(100), 
+                           function(x) { cv_MRF_diag(data = data_host_df, 
+                                                     n_nodes = 16, 
+                                                     n_folds = 4, 
+                                                     n_cores = 1, 
+                                                     family = "binomial", 
+                                                     compare_null = FALSE, 
+                                                     plot = FALSE, 
+                                                     cached_model = crf1_host, 
+                                                     cached_predictions = list(predictions = preds_crf1_host), 
+                                                     sample_seed = 10)
+                                        })
+crf_only_host_cv <- do.call(rbind, crf_only_host_cv)
+
+# only habi
+crf_only_habi_cv <- lapply(seq_len(100), 
+                           function(x) { cv_MRF_diag(data = data_habi_df, 
+                                                     n_nodes = 16, 
+                                                     n_folds = 4, 
+                                                     n_cores = 1, 
+                                                     family = "binomial", 
+                                                     compare_null = FALSE, 
+                                                     plot = FALSE, 
+                                                     cached_model = crf1_habi, 
+                                                     cached_predictions = list(predictions = preds_crf1_habi), 
+                                                     sample_seed = 10)
+                                        })
+crf_only_habi_cv <- do.call(rbind, crf_only_habi_cv)
 
 # MRF
 mrf_cv <- lapply(seq_len(100), 
@@ -631,185 +716,455 @@ mrf_cv <- do.call(rbind, mrf_cv)
 cv_res <- list("env_and_mems" = crf_env_and_mems_cv, 
                "only_mems" = crf_only_mems_cv,
                "only_env" = crf_only_env_cv,
+               "only_host" = crf_only_host_cv,
+               "only_habi" = crf_only_habi_cv,
                "mrf" = mrf_cv)
+saveRDS(cv_res, file = file.path(dirs$fits, "cv_res.rds"))
+cv_res <- readRDS(file = file.path(dirs$fits, "cv_res.rds"))
 lapply(cv_res, apply, 2, quantile, probs = c(0.025, 0.5, 0.975), na.rm = TRUE)
-# sensitivity measures the proportion of presences that are correctly identified 
+#pos_pred = the proportion of true positives out of all predicted positives
+    #sum(true_pos, na.rm = TRUE) / (sum(true_pos, na.rm = TRUE) + sum(false_pos, na.rm = TRUE))
+#sensitivity = prop. of true positives out of all real positives
     # i.e. probability of a positive prediction, given that the virus is present
-# specificity measures the proportion of absences that are correctly identified,
+    # sum(true_pos, na.rm = TRUE)/(sum(true_pos, na.rm = TRUE) + sum(false_neg, na.rm = TRUE))
+#neg_pred = prop. of true negatives out of all predicted negatives
+    #sum(true_neg, na.rm = TRUE) / (sum(true_neg, na.rm = TRUE) + sum(false_neg, na.rm = TRUE))
+#specificity = prop. of true negatives out of all real negatives 
     # i.e. probability of a negative prediction, given that the virus is absent
+    #sum(true_neg, na.rm = TRUE)/(sum(true_neg, na.rm = TRUE) + sum(false_pos, na.rm = TRUE))
+#tot_pred = prop. of all true predictions out of the whole data
+    #(sum(true_pos, na.rm = TRUE) + sum(true_neg, na.rm = TRUE))/(length(as.matrix(test_data)))
 
-# CRFs underestimate the presences ---> the networks are conservative in predicting presence
+# MRFs predicts more false positives than false negatives
+# higher sensitivity than CRFs, but lower specificity
 
-# calculating Tjur R2s
-    # Tjur R2 : for each of the two categories of the dependent variable, 
-    # calculate the mean of the predicted probabilities of an event,
-    # then, take the difference between those two means.
-probs <- list("env_and_mems" = preds_crf1_mem$Probability_predictions,
-              "only_mems" = preds_crf1_only_mem$Probability_predictions,
-              "only_env" = preds_crf1$Probability_predictions,
-              "mrf" = preds_mrf1$Probability_predictions)
-aucs <- list()
-tjuR2s <- list()
-for (p in 1:length(probs)) {
+# CRFs have very little difference among each other,
+# in general a high proportion of true positives out of all predicted positives
+# lowish sensitivity, so a fair amount of false negatives
+# high specificity, so very few false positives
 
-    tmp2 <- NA
-    for (i in 1:ncol(y)) {
-        tmp1 <- pROC::auc(response = y[,i],
-                          predictor = preds_crf1_mem$Probability_predictions[,i])    
-        tmp2 <- c(tmp2, tmp1)
-    }
-    aucs[[p]] <- matrix(tmp2[-1], ncol = 1)
-    rownames(aucs[[p]]) <- colnames(y)
+MRFcov:::cv_MRF_diag
 
-    tmp <- NA
-    for (i in 1:ncol(y)){                       # for all species separately
-        print(c(colnames(y)[i], 
-                round(mean(probs[[p]][,i][y[,i] == 1]) - mean(probs[[p]][,i][y[,i] == 0]), 2)))
-                tmp <- c(tmp, mean(probs[[p]][,i][y[,i] == 1]) - mean(probs[[p]][,i][y[,i] == 0]))
-            
-    }
-    tjuR2s[[p]] <- matrix(tmp[-1], ncol = 1)
-    rownames(tjuR2s[[p]]) <- colnames(y)
-
-
-}
-lapply(tjuR2s, mean)
-
-plot(x = 1:length(tjuR2s), y = seq(0, 0.5, length.out = length(tjuR2s)), type = "n", xaxt = "n", xlab = "", ylab = "Tjur R^2")
-for (i in 1:length(tjuR2s)) {
-    points(x = rep(i, times = length(tjuR2s[[i]])), y = tjuR2s[[i]], pch = 21, bg = "grey")
-    points(x = i, y = mean(tjuR2s[[i]]), pch = 21, bg = "red3", cex = 1.5)
-}
-
-#mean(probs[[1]][y == 1]) - mean(probs[[1]][y == 0])   # for the whole data
-
-colSums(y)
-## correlations for population level
-#cor(matrix(y_pop, ncol = 1), 
-#    matrix(preds_mrf1_pop, ncol = 1))
-#cor(matrix(y_pop, ncol = 1), 
-#    matrix(preds_crf1_pop, ncol = 1))
-#cor(matrix(y_pop, ncol = 1), 
-#    matrix(preds_crf1_pop_spat1, ncol = 1))
-#cor(matrix(y_pop, ncol = 1), 
-#    matrix(preds_crf1_pop_mem, ncol = 1))       # seems to be the best
-#cor(matrix(y_pop, ncol = 1), 
-#    matrix(preds_crf1_pop_only_mem, ncol = 1))
-
-### the best model at both levels is CRF with MEMs
-##########################################################################################
-
-# 3.5 Final CRF with bootstrapping
-
-# 3.5.1 Sample level
+# 3.5 Fitting final CRFs with bootstrapping (for obtaining parameter uncertainties)
+library(MRFcov)
 MRFcov:::bootstrap_MRF
+?bootstrap_MRF
 
-bootedCRF_w_mems <- bootstrap_MRF(data_mems_df,
-                                  n_nodes = 16,
-                                  family = "binomial",
-                                  sample_prop = 0.9,
-                                  n_bootstraps = 100)
-saveRDS(bootedCRF_w_mems, 
-        file = file.path(dirs$fits, "bootedCRF_w_mems_sampleprop100_n100.rds"))
+sampleProp <- 1
+nBoot <- 100
+nodes <- 16
 
-bootedCRF_w_mems <- readRDS(file = file.path(dirs$fits, "bootedCRF_w_mems_sampleprop100_n100.rds"))
-
-# corresponding MRF
+# MRF
 bootedMRF <- bootstrap_MRF(as.data.frame(y),
-                           n_nodes = 16,
+                           n_nodes = nodes,
                            family = "binomial",
-                           sample_prop = 1,
-                           n_bootstraps = 100)
+                           sample_prop = sampleProp,
+                           n_bootstraps = nBoot)
+fileName <- paste0("bootedMRF", "_sampleprop", sampleProp, "_boots", nBoot, ".rds")
 saveRDS(bootedMRF, 
-        file = file.path(dirs$fits, "bootedMRF_sampleprop100_n100.rds"))
+        file = file.path(dirs$fits, fileName))
 
-bootedMRF <- readRDS(file = file.path(dirs$fits, "bootedMRF_sampleprop100_n100.rds"))
+# CRF with env and mems
+bootedCRF_w_env_mems <- bootstrap_MRF(data_mems_df,
+                                      n_nodes = nodes,
+                                      family = "binomial",
+                                      sample_prop = sampleProp,
+                                      n_bootstraps = nBoot)
+fileName <- paste0("bootedCRF_w_env_mems", "_sampleprop", sampleProp, "_boots", nBoot, ".rds")
+saveRDS(bootedCRF_w_env_mems, 
+        file = file.path(dirs$fits, fileName))
 
-# 3.5.1 Population level
-#bootedCRF_w_mems_pop <- bootstrap_MRF(data_pop_mems_df,
-#                                  n_nodes = 16,
-#                                  family = "poisson",
-#                                  sample_prop = 0.7,
-#                                  n_bootstraps = 1000)
-#saveRDS(bootedCRF_w_mems_pop, 
-#        file = file.path(dirs$fits, "bootedCRF_w_mems_pop_n1000.rds"))
+# CRF with mems only
+bootedCRF_w_mems_only <- bootstrap_MRF(data_only_mems_df,
+                                       n_nodes = nodes,
+                                       family = "binomial",
+                                       sample_prop = sampleProp,
+                                       n_bootstraps = nBoot)
+fileName <- paste0("bootedCRF_w_mems_only", "_sampleprop", sampleProp, "_boots", nBoot, ".rds")
+saveRDS(bootedCRF_w_mems_only, 
+        file = file.path(dirs$fits, fileName))
 
-plotMRF_hm(MRF_mod = bootedCRF_w_mems, 
-           #node_names, 
-           #main, 
-           plot_observed_vals = FALSE, 
-           data = data_mems_df)
+# CRF with env
+bootedCRF_w_env <- bootstrap_MRF(data_df,
+                                 n_nodes = nodes,
+                                 family = "binomial",
+                                 sample_prop = sampleProp,
+                                 n_bootstraps = nBoot)
+fileName <- paste0("bootedCRF_w_env", "_sampleprop", sampleProp, "_boots", nBoot, ".rds")
+saveRDS(bootedCRF_w_env, 
+        file = file.path(dirs$fits, fileName))
 
-# 3.6 MRF Cross Validation And Assessment Of Predictive Performance
+# CRF with habitat
+bootedCRF_w_habi <- bootstrap_MRF(data_habi_df,
+                                  n_nodes = nodes,
+                                  family = "binomial",
+                                  sample_prop = sampleProp,
+                                  n_bootstraps = nBoot)
+fileName <- paste0("bootedCRF_w_habi", "_sampleprop", sampleProp, "_boots", nBoot, ".rds")
+saveRDS(bootedCRF_w_habi, 
+        file = file.path(dirs$fits, fileName))
 
-# 3.6.1 Sample level
-cv_comparison_rep1000 <- cv_MRF_diag_rep(data_mems_df, 
-                                         n_nodes = 16,
-                                         compare_null = TRUE,
-                                         plot = FALSE,
-                                         n_cores = 2, 
-                                         family = "binomial",
-                                         n_fold_runs = 1000)
-                                        
-saveRDS(cv_comparison_rep1000, 
-        file = file.path(dirs$fits, "cv_comparison_mrf1_crf1_mem_rep1000.rds"))
-cv_comparison_rep1000 <- readRDS(file = file.path(dirs$fits, "cv_comparison_mrf1_crf1_mem_rep1000.rds"))
+# CRF with host vars
+bootedCRF_w_host <- bootstrap_MRF(data_host_df,
+                                  n_nodes = nodes,
+                                  family = "binomial",
+                                  sample_prop = sampleProp,
+                                  n_bootstraps = nBoot)
+fileName <- paste0("bootedCRF_w_host", "_sampleprop", sampleProp, "_boots", nBoot, ".rds")
+saveRDS(bootedCRF_w_host, 
+        file = file.path(dirs$fits, fileName))
 
-mod_fits <- cv_comparison_rep1000
-names(mod_fits)
+booted_models <- list("MRF" = bootedMRF, 
+                      "CRF_env_mems" = bootedCRF_w_env_mems, 
+                      "CRF_env" = bootedCRF_w_env, 
+                      "CRF_mems" = bootedCRF_w_mems_only,
+                      "CRF_habi" = bootedCRF_w_habi, 
+                      "CRF_host" = bootedCRF_w_host)
+saveRDS(booted_models, 
+        file = file.path(dirs$fits, 
+                         paste0("booted_models",
+                         "_sampleprop", 
+                         sampleProp, 
+                         "_boots", 
+                         nBoot,
+                         ".rds")))
+booted_models <- readRDS(file = file.path(dirs$fits, 
+                                          paste0("booted_models",
+                                          "_sampleprop", 
+                                          sampleProp, 
+                                          "_boots", 
+                                          nBoot,
+                                          ".rds")))
+MRFcov:::plotMRF_hm
+tmp <- plotMRF_hm(MRF_mod = booted_models[[2]], 
+                 #node_names, 
+                 #main, 
+                 plot_observed_vals = FALSE, 
+                 data = data_mems_df)
 
-# sensitivity (aka the true positive rate) is
-# the proportion of presences that are correctly classified as such
-# unconditional model
-quantile(mod_fits$mean_sensitivity[which(mod_fits$model != "CRF")],
-         probs = c(0.01, 0.5, 0.99))
-# conditional model
-quantile(mod_fits$mean_sensitivity[which(mod_fits$model == "CRF")],
-         probs = c(0.01, 0.5, 0.99))
+head(booted_models$CRF_env_mems$direct_coef_means)
+head(tmp$data)
+?bootstrap_MRF
 
-# specificity (aka the true negative rate) is
-# the proportion of absences that are correctly classified as such
-# unconditional model
-quantile(mod_fits$mean_specificity[which(mod_fits$model != "CRF")],
-         probs = c(0.01, 0.5, 0.99))
-# conditional model
-quantile(mod_fits$mean_specificity[which(mod_fits$model == "CRF")],
-         probs = c(0.01, 0.5, 0.99))
+# association significances (does the 90% interval overlap with zero)
+significances <- list()
+for (i in 1:length(booted_models)) {
+    significances[[i]] <- (sign(booted_models[[i]]$direct_coef_upper90) + sign(booted_models[[i]]$direct_coef_lower90))[,1:nodes]
+}
+names(significances) <- names(booted_models)
 
-# proportions of true infections that were correctly predicted
-# unconditional model
-quantile(mod_fits$mean_tot_pred[which(mod_fits$model != "CRF")],
-         probs = c(0.01, 0.5, 0.99))
-# conditional model
-quantile(mod_fits$mean_tot_pred[which(mod_fits$model == "CRF")],
-         probs = c(0.01, 0.5, 0.99))
+# mean associations
+associations <- list()
+for (i in 1:length(booted_models)) {
+    associations[[i]] <- booted_models[[i]]$direct_coef_means[1:nodes, 2:(nodes + 1)]
+}
+names(associations) <- names(booted_models)
+# round to one decimal to get rid of very small values
+associations <- lapply(associations, round, digits = 3)
 
-# model's ability to correctly classify positive infections
-# unconditional model
-quantile(mod_fits$mean_pos_pred[which(mod_fits$model != "CRF")],
-         probs = c(0.01, 0.5, 0.99),
-         na.rm = TRUE)
-# conditional model
-quantile(mod_fits$mean_pos_pred[which(mod_fits$model == "CRF")],
-         probs = c(0.01, 0.5, 0.99),
-         na.rm = TRUE)
+# leave significant associations, others -> 0
+associations_sig <- associations
+for (i in 1:length(associations_sig)) {
+    associations_sig[[i]][which(abs(significances[[i]]) != 2)] <- 0
+}
 
-# 3.6.2 Population level
-#cv_comparison_pop_rep1000 <- cv_MRF_diag_rep(data_mems_df, 
-#                                             n_nodes = 16,
-#                                             compare_null = TRUE,
-#                                             plot = FALSE,
-#                                             n_cores = 2, 
-#                                             family = "poisson",
-#                                             n_fold_runs = 1000)
-#                                        
-#saveRDS(cv_comparison_pop_rep1000, 
-#        file = file.path(dirs$fits, "cv_comparison_mrf1_crf1_mem_pop_rep1000.rds"))
+# check are there conflicting associations 
+for (i in 1:length(associations_sig)) {
+    asss <- associations_sig[[i]]
+    print(all(asss[which((asss != 0) + (t(asss) != 0) == 2)] == t(asss)[which((asss != 0) + (t(asss) != 0) == 2)]))
+}
+
+# no changes in the directions of significant associations
+assoc_signs[[6]][which(assoc_signs[[1]] > 0, arr.ind = TRUE)]
+assoc_signs[[6]][which(assoc_signs[[1]] < 0, arr.ind = TRUE)]
+
+# make the association matrix symmetric
+ass_sig_symm <- associations_sig
+for (i in 1:length(ass_sig_symm)) {
+    for (k in 1:nrow(ass_sig_symm[[i]])) {
+        for (j in 1:ncol(ass_sig_symm[[i]])) {
+            if (ass_sig_symm[[i]][k,j] != 0 | ass_sig_symm[[i]][j,k] != 0) {    
+                if (ass_sig_symm[[i]][k,j] != ass_sig_symm[[i]][j,k]) {
+                    print(c(ass_sig_symm[[i]][k,j],
+                            ass_sig_symm[[i]][j,k]))
+                    ass_sig_symm[[i]][k,j] <- ass_sig_symm[[i]][k,j] + ass_sig_symm[[i]][j,k]
+                    ass_sig_symm[[i]][j,k] <- ass_sig_symm[[i]][k,j]
+                }
+            }
+        }
+    }
+}
+
+# directions of the significant associations
+assoc_signs <- list()
+for (i in 1:length(ass_sig_symm)) {
+    assoc_signs[[i]] <- sign(ass_sig_symm[[i]])
+}
+names(assoc_signs) <- names(ass_sig_symm)
+# only MRF results in direct negative virus-virus associations
+
+# comparison to phylogeny
+phyl <- ape::keep.tip(dat$phylogeny, colnames(nonzero_assocs[[1]]))
+#plot(igraph::as.igraph(phyl))
+phylmat <- cophenetic(phyl)
+phyl_comp <- list()
+for (i in 1:length(ass_sig_symm)) {
+    phyl_comp[[i]] <- vegan::mantel(xdis = dist(ass_sig_symm[[i]]), 
+                                    ydis = dist(phylmat))
+}
+names(phyl_comp) <- names(ass_sig_symm)
+# no connection between phylogeny and associations
+
+perm_assoc <- ass_sig_symm[[2]]
+perm_assoc[which(assoc_sum != 6, arr.ind = TRUE)] <- 0
+vegan::mantel(xdis = dist(perm_assoc), ydis = dist(phylmat))
+perm_assoc_cleared <- perm_assoc
+perm_assoc_cleared[upper.tri(perm_assoc_cleared)] <- 0
+
+ass_sig_symm_cleared <- ass_sig_symm
+for (i in 1:length(ass_sig_symm_cleared)) {
+    ass_sig_symm_cleared[[i]][upper.tri(ass_sig_symm_cleared[[i]])] <- 0
+}
+
+# how many associations in total
+nonzero_assocs <- lapply(lapply(ass_sig_symm_cleared, sign), abs)
+lapply(nonzero_assocs, sum)
+
+assoc_sum <- 0
+for (i in 1:length(nonzero_assocs)) {
+    assoc_sum <- nonzero_assocs[[i]] + assoc_sum
+}
+which(assoc_sum == 6, arr.ind = TRUE)
+
+
+# create adjacency matrices for plotting the networks
+adj_mats <- list()
+for (i in 1:length(ass_sig_symm_cleared)) {
+    adj_mats[[i]] <- igraph::graph.adjacency(ass_sig_symm_cleared[[i]], 
+                                             weighted = TRUE, 
+                                             mode = "undirected")
+    # delete edges that represent weak interactions
+    adj_mats[[i]] <- igraph::delete.edges(adj_mats[[i]], 
+                                          which(abs(igraph::E(adj_mats[[i]])$weight) <= 0.05))
+}
+
+adj_mats[[length(adj_mats) + 1]] <- igraph::graph.adjacency(perm_assoc, 
+                                                            weighted = TRUE, 
+                                                            mode = "undirected")
+# delete edges that represent weak interactions
+adj_mats[[length(adj_mats)]] <- igraph::delete.edges(adj_mats[[length(adj_mats)]], 
+                                                     which(abs(igraph::E(adj_mats[[length(adj_mats)]])$weight) <= 0.05))
+
+names(adj_mats) <- c(names(ass_sig_symm_cleared), "permanent") 
+plot(adj_mats[[7]])
+
+cols <- c(grDevices::adjustcolor("blue2", alpha.f = 0.95), 
+          grDevices::adjustcolor("red", alpha.f = 0.95))
+
+for (i in 1:length(adj_mats)) {
+    igraph::E(adj_mats[[i]])$color <- ifelse(igraph::E(adj_mats[[i]])$weight < 0, 
+                                             cols[1], 
+                                             cols[2])
+    igraph::E(adj_mats[[i]])$width <- abs(igraph::E(adj_mats[[i]])$weight) * 1.5
+    adj_mats[[i]] <- igraph::delete.vertices(adj_mats[[i]], 
+                                             igraph::degree(adj_mats[[i]]) == 0)
+}
+
+### FIGURE 4 in main text ######
+
+for (i in 1:length(adj_mats)) {
+    png(file.path(dirs$figs,
+                  paste0("igraph_", names(adj_mats)[i], ".png")), 
+        height = 10, 
+        width = 10, 
+        bg = "transparent",
+        units = "in", 
+        res = 300)
+        par(mar = c(1, 1, 1, 10), family = "serif")
+        set.seed(73)
+        #set.seed(10)
+        plot(adj_mats[[i]], 
+             edge.curved = 0.4,
+             vertex.size = 6,
+             vertex.color = "grey80",
+             vertex.label.color = "black",
+             vertex.label.font = 2,
+             vertex.frame.color = grDevices::adjustcolor("black", alpha.f = 0.8), 
+             label = TRUE)
+    dev.off()
+}
+
+#################################
+
+# Compare associations, where can they accounted to
+library(NetComp)
+?netDiff
+# returns a matrix containing edges present in matrix1 that are not present in matrix2
+names(ass_sig_symm_cleared)
+host_effect <- netDiff(matrix1 = ass_sig_symm_cleared$CRF_habi, 
+                       matrix2 = ass_sig_symm_cleared$CRF_env_mems, 
+                       cutoff = 0.05)
+habi_effect <- netDiff(matrix1 = ass_sig_symm_cleared$CRF_host, 
+                       matrix2 = ass_sig_symm_cleared$CRF_env_mems, 
+                       cutoff = 0.05)
+env_effect <- netDiff(matrix1 = ass_sig_symm_cleared$CRF_mems, 
+                      matrix2 = ass_sig_symm_cleared$CRF_env_mems, 
+                      cutoff = 0.05)
+mems_effect <- netDiff(matrix1 = ass_sig_symm_cleared$CRF_env, 
+                       matrix2 = ass_sig_symm_cleared$CRF_env_mems, 
+                       cutoff = 0.05)
+full_crf_effect <- netDiff(matrix1 = ass_sig_symm_cleared$MRF, 
+                           matrix2 = ass_sig_symm_cleared$CRF_env_mems, 
+                           cutoff = 0.05)
+
+adj_mats_diffs <- list("mems" = NA, "host" = NA, "habi" = NA, "env" = NA)
+adj_mats_diffs$mems <- igraph::graph.adjacency(mems_effect, 
+                                               weighted = TRUE, 
+                                               mode = "undirected")
+adj_mats_diffs$host <- igraph::graph.adjacency(host_effect, 
+                                               weighted = TRUE, 
+                                               mode = "undirected")
+adj_mats_diffs$habi <- igraph::graph.adjacency(habi_effect, 
+                                               weighted = TRUE, 
+                                               mode = "undirected")
+adj_mats_diffs$env <- igraph::graph.adjacency(env_effect, 
+                                               weighted = TRUE, 
+                                               mode = "undirected")
+
+# create adjacency matrices for plotting the networks
+for (i in 1:length(adj_mats_diffs)) {
+    # delete edges that represent weak interactions
+    adj_mats_diffs[[i]] <- igraph::delete.edges(adj_mats_diffs[[i]], 
+                                                which(abs(igraph::E(adj_mats_diffs[[i]])$weight) <= 0.05))
+}
+cols <- c(grDevices::adjustcolor("blue2", alpha.f = 0.95), 
+          grDevices::adjustcolor("red", alpha.f = 0.95))
+
+for (i in 1:length(adj_mats_diffs)) {
+    igraph::E(adj_mats_diffs[[i]])$color <- ifelse(igraph::E(adj_mats_diffs[[i]])$weight < 0, 
+                                                   cols[1], 
+                                                   cols[2])
+    igraph::E(adj_mats_diffs[[i]])$width <- abs(igraph::E(adj_mats_diffs[[i]])$weight) * 1.5
+    adj_mats_diffs[[i]] <- igraph::delete.vertices(adj_mats_diffs[[i]], 
+                                                   igraph::degree(adj_mats_diffs[[i]]) == 0)
+}
+
+names(adj_mats_diffs)
+for (i in 1:length(adj_mats_diffs)) {
+    png(file.path(dirs$figs,
+                  paste0("igraph_", names(adj_mats_diffs)[i], "_effect.png")), 
+        height = 10, 
+        width = 10, 
+        bg = "transparent",
+        units = "in", 
+        res = 300)
+        par(mar = c(1, 1, 1, 10), family = "serif")
+        set.seed(73)
+        #set.seed(10)
+        plot(adj_mats_diffs[[i]], 
+             edge.curved = 0.4,
+             vertex.size = 6,
+             vertex.color = "grey80",
+             vertex.label.color = "black",
+             vertex.label.font = 2,
+             vertex.frame.color = grDevices::adjustcolor("black", alpha.f = 0.8), 
+             label = TRUE)
+    dev.off()
+}
+
+
+# direct covariate effects
+mod <- bootedCRF_w_env_mems
+
+names(mod)
+cov_inds <- c(1, 18:33)
+colnames(mod$direct_coef_means)
+mod$direct_coef_means[, cov_inds]
+
+signs <- sign(mod$direct_coef_upper90) + sign(mod$direct_coef_lower90)
+sigs <- which(signs == -2 | signs == 2, arr.ind = TRUE)
+
+cbind(rownames(mod$direct_coef_means)[sigs[,1]], 
+      colnames(mod$direct_coef_means)[sigs[,2]], 
+      mod$direct_coef_means[sigs], 
+      signs[sigs])
+
+sig_direct_env_effects <- cbind(rownames(mod$direct_coef_means)[sigs[,1]], 
+                                colnames(mod$direct_coef_means)[sigs[,2]], 
+                                round(mod$direct_coef_means[sigs], 2))
+head(sig_direct_env_effects)
+write.table(sig_direct_env_effects,
+            file = file.path(dirs$fits,"direct_sig_env_effs.csv"),
+            quote = FALSE,
+            sep = ";",
+            dec = ".")
+            
+
+# key coefficients
+library(circleplot)
+for (whichvirus in colnames(y)) {
+    tmp <- data.frame(sp1 = mod$mean_key_coefs[whichvirus][[1]]$Variable, 
+                      sp2 = rep(whichvirus, 
+                            nrow(mod$mean_key_coefs[whichvirus][[1]])),
+                      coef = mod$mean_key_coefs[whichvirus][[1]]$Rel_importance)
+    pdf(file = file.path(dirs$figs,
+                         "key_ints",
+                         paste0("key_ints_", whichvirus, ".pdf")),
+        bg = "transparent", 
+        width = 6, 
+        height = 6)
+        par(family = "serif")
+        circleplot(tmp,
+                   cluster = FALSE,
+                   style = "classic",
+                   plot.control = list(point.labels = TRUE,
+                                   cex.point = 15,
+                                   line.breaks = c(-20,-1,0,0.1,0.5,20),
+                                   line.cols = c("#004080",
+                                                 "#62b1ff",
+                                                 "#f5d3dc", 
+                                                 "#e795aa", 
+                                                 "#c60032"),
+                                   line.widths = 5))
+    dev.off()
+}
+
+# How many times each virus appears as a key effect for other viruses?
+for (v1 in colnames(y)) {
+    tmp1 <- NA
+    for (v2 in colnames(y)) {
+        tmp2 <- length(grep(v1, mod$mean_key_coefs[[v2]]$Variable))
+        tmp1 <- c(tmp1, tmp2)
+    }
+    infs <- tmp1[-1]
+    print(c(v1, sum(infs > 0)))
+}
+# Bromoviridae is a key coefficient for 9 viruses, 
+# the rest, max 6 (Virga), all at least 1
+
+
+
+# 210221 Tähän asti katsottu koodit
+# alla olevat plottauskoodit vanhoja ja sekasin...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # 4 Results & Figures
 library(circleplot)
-
-# 4.1 Beta diversity
 
 ###* ALL COINFECTIONS *###
 
@@ -829,14 +1184,15 @@ dev.off()
 ###* end of ALL COINFECTIONS *###
 
 
-###* FIGURE 1 IN MAIN TEXT *###
+###* FIGURE 2 IN MAIN TEXT *###
 
 # maps
 make_maps(dirs = dirs, POPs = dat$X$pop)
 # (co)infection profile piecharts
 plot_pops(dat = dat, dirs = dirs)
+##### 150221
+##### include pop barplots to plot_pops
 
-# beta diversities
 coinfs <- readRDS(file = file.path(dirs$fits, "coinfs.rds"))
 all_combs_frqs <- table(unlist(lapply(coinfs, names)))
 all_combs_frqs <- all_combs_frqs[order(all_combs_frqs, decreasing = TRUE)]
@@ -855,25 +1211,6 @@ all_coinf_combs_cols <- cbind(as.character(all_combs_frqs_df[,1]), combs_cols)
 rownames(all_coinf_combs_cols) <- all_coinf_combs_cols[,1]
 all_coinf_combs_cols <- all_coinf_combs_cols[order(viruses_nos), ]
 all_coinf_combs_cols[which(rownames(all_coinf_combs_cols) == "No infection"), 2] <- "white"
-
-#pop <- "3225"
-#par(family = "serif", mar = c(0,0,0,0), mfrow = c(1,2))
-for (pop in names(coinfs)) {
-    png(file.path(dirs$figs,
-                 "coinfections_by_pop", 
-                 paste0("coinfection_profile_pop_", pop,".png")), 
-        height = 3, 
-        width = 3, 
-        bg = "transparent",
-        units = "in", 
-        res = 300)
-
-    patch_cols <- all_coinf_combs_cols[sort(match(names(coinfs[[pop]]), rownames(all_coinf_combs_cols))), 2]
-    par(mar = rep(0, 4))
-    pie(coinfs[[pop]][names(patch_cols)], labels = NA, col = patch_cols)
-
-    dev.off()
-}
 all_coinf_combs_cols_leg <- all_coinf_combs_cols[-which(all_coinf_combs_cols[,1] == "No infection"),]
 png(file = file.path(dirs$figs, 
                      "coinfections_by_pop", 
@@ -890,7 +1227,7 @@ png(file = file.path(dirs$figs,
             fill = all_coinf_combs_cols_leg[,2], 
             bty = "n")
 dev.off()
-###* end of figure 1 in main text *###
+###* end of figure 2 in main text *###
 
 # 3.2 Co-occurrences
 res_cooc <- readRDS(file = file.path(dirs$fits, "res_cooc.rds"))
@@ -1012,13 +1349,12 @@ phylmat <- cophenetic(phyl)
 vegan::mantel(xdis = dist(interactions), ydis = dist(phylmat))
 # no connection between phylogeny and interactions
 
-data(varespec)
-dim(varespec)
-vare.dist <- vegdist(varespec)
-vare.dist
 
+interactions <- interactions_mrf
 # Create an adjacency matrix
 adj_mat <- igraph::graph.adjacency(interactions, weighted = TRUE, mode = "undirected")
+
+#^^^
 
 # Delete edges that represent weak interactions
 adj_mat <- igraph::delete.edges(adj_mat, which(abs(igraph::E(adj_mat)$weight) <= 0.06))
@@ -1193,7 +1529,6 @@ names(bootedCRF_w_mems)
 cov_inds <- 18:33
 colnames(bootedCRF_w_mems$direct_coef_means)
 bootedCRF_w_mems$direct_coef_means[,cov_inds]
-colSums(bootedCRF_w_mems$direct_coef_means != 0)
 
 signs <- sign(bootedCRF_w_mems$direct_coef_upper90) + sign(bootedCRF_w_mems$direct_coef_lower90)
 sigs <- which(signs == -2 | signs == 2, arr.ind = TRUE)
@@ -1205,7 +1540,7 @@ cbind(rownames(bootedCRF_w_mems$direct_coef_means)[sigs[,1]],
 
 sig_direct_env_effects <- cbind(rownames(bootedCRF_w_mems$direct_coef_means)[sigs[,1]], 
                                 colnames(bootedCRF_w_mems$direct_coef_means)[sigs[,2]], 
-                                round(bootedCRF_w_mems$direct_coef_means[sigs], 4))[-c(1:76),]
+                                round(bootedCRF_w_mems$direct_coef_means[sigs], 4))
 
 write.table(sig_direct_env_effects,
             file = file.path(dirs$fits,"direct_sig_env_effs.csv"),
@@ -1289,13 +1624,12 @@ for (v1 in colnames(y)) {
         tmp2 <- length(grep(v1, bootedCRF_w_mems$mean_key_coefs[[v2]]$Variable))
         tmp1 <- c(tmp1, tmp2)
     }
-    bromo <- tmp1[-1]
-    print(c(v1, sum(bromo > 0)))
+    infs <- tmp1[-1]
+    print(c(v1, sum(infs > 0)))
 }
 # Bromoviridae is a key coefficient for 9 viruses, 
-# the rest, max 6, mostly less, all at least 1
+# the rest, max 5, all at least 1
 
-# indirect effects
 
 ##########################################################################################
 
