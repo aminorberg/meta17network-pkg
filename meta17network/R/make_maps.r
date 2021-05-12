@@ -28,7 +28,6 @@ make_maps <- function(dirs, POPs) {
                 plot(subs_eur)
     dev.off()
 
-
     map_aland2_crop <- raster::crop(map_aland2, raster::extent(19.3, 20.9, 59.95, 60.4))
     map_aland2_crop_sm <- smoothr::smooth(map_aland2_crop, method = "ksmooth", smoothness = 20)
     map_aland <- map_aland2_crop_sm
@@ -57,3 +56,4 @@ make_maps <- function(dirs, POPs) {
     dev.off()
 
 }
+

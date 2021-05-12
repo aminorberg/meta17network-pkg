@@ -7,9 +7,9 @@ gc()
 library("devtools")
 library("roxygen2")
 
-root_dir <- "/Users/anorberg/Documents/Zurich/UZH/META"
-working_dir <- "/Users/anorberg/Documents/Zurich/UZH/META/meta17network-pkg"
-pkg_dir <- "/Users/anorberg/Documents/Zurich/UZH/META/meta17network-pkg/meta17network"
+root_dir <- "/Users/annanorberg/switchdrive/UZH/Projects/META"
+working_dir <- file.path(root_dir, "meta17network-pkg")
+pkg_dir <- file.path(working_dir, "meta17network")
 
 ### create the package
 #setwd(working_dir)
