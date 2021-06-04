@@ -1,32 +1,25 @@
 Package: meta17network
-Title: Analysing virus communities hosted by Plantago lanceolata with Markov Random Fields
+Title: Analysing virus communities with Markov Random Fields
 Version: 0.1
-Authors@R: 
+Authors@R:
     person(given = "Anna",
            family = "Norberg",
            role = c("aut", "cre"),
            email = "norberg.ami@gmail.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
-Encoding: UTF-8
-LazyData: true
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.1.9000
-Imports: 
-    MRFcov, 
-    dummies, 
-    devtools, 
-    vegan, 
-    ape, 
-    adespatial, 
-    caret, 
-    dplyr, 
-    cooccur, 
+           comment = c(ORCID = "0000-0002-3520-1043"))
+Description: A package for analysing wild virus communities hosted by natural populations of Plantago lanceolata with Conditional Random Fields.
+Imports:
+    MRFcov,
+    dummies,
+    devtools,
+    vegan,
+    ape,
+    adespatial,
+    caret,
+    dplyr,
+    cooccur,
     betapart
-Suggests: 
-    circleplot,
+Suggests:
     RColorBrewer,
     wesanderson,
     matrixcalc,
@@ -38,3 +31,7 @@ Suggests:
     units,
     smoothr,
     spMaps
+License: GPL (>= 2)
+LazyData: true
+RoxygenNote: 7.1.1
+Encoding: UTF-8

@@ -12,7 +12,7 @@ working_dir <- file.path(root_dir, "meta17network-pkg")
 pkg_dir <- file.path(working_dir, "meta17network")
 
 ### create the package
-#setwd(working_dir)
+setwd(working_dir)
 #create("meta17network")
 
 ### document the package

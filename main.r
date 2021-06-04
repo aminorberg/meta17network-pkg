@@ -14,6 +14,8 @@ dat <- process_data(dirs = dirs,
                     save_data = TRUE,
                     rmNAs = TRUE)
 warnings()
+# these warnings are related to the missing covariate data for four plants,
+# which are consequently removed from the final data set for analysis (400 -> 396 plants)
 
 max(colSums(dat$Y)/nrow(dat$Y)) # max prevalence 33%
 min(colSums(dat$Y)/nrow(dat$Y)) # min prevalence 0.5%
@@ -172,41 +174,43 @@ all_coinfs <- all_coinfs[order(all_coinfs)]
 saveRDS(all_coinfs, file = file.path(dirs$fits, "all_coinfs.rds"))
 
 # Coexistence and species-area curves
+set.seed(7)
 coexs <- coexistence_curves(Y = dat$Y, 
 							xy = dat$X[, c("x", "y")], 
 							sample_ids = dat$X[, "sampleID"], 
 							dirs = dirs, 
 							nsim = 100)
 
+(((rowMeans(coexs[[3]])[sam])^2) - (rowMeans(coexs[[3]])[sam])) / 2
+
 #&&& FIGURE 3B &&&&&
-# coexistence mean curves
-png(file.path(dirs$figs, "coex_mean_curves.png"),
+# coexistence mean curve
+png(file.path(dirs$figs, "coex_mean_curve.png"),
     height = 4, 
     width = 7, 
     bg = "transparent",
     units = "in", 
     res = 300)
-    par(family = "serif", mar = c(3,3,1,1))
+    par(family = "serif", mar = c(3,1,1,3))
     plot(y = coexs[[1]][,1], x = 1:nrow(coexs[[1]]), 
          type = "n",
          lwd = 1.5, 
          ylab = "", 
-         xlab = "")
+         xlab = "",
+         yaxt = "n",
+         ylim = c(0, 300))
     lines(y = rowMeans(coexs[[1]]),
           x = 1:nrow(coexs[[1]]),
           lwd = 2)
-    lines(y = rowMeans(coexs[[2]]),
-          x = 1:nrow(coexs[[2]]),
-          lty = 2,
-          lwd = 2)
+    lines(y = ((rowMeans(coexs[[3]])^2) - rowMeans(coexs[[3]])) / 2,
+          x = 1:nrow(coexs[[3]]),
+          lwd = 2,
+          col = "grey",
+          lty = 2)
+	axis(4, at = c(10, 50, 100, 300), las = 2)
 dev.off()
 
 # species-area accumulation curve
-nsp <- rowMeans(sp_area)[100]
-((round(ncol(dat$Y))^2) - round(ncol(dat$Y)))/2
-rowMeans(insidSumS)[100]
-rowMeans(insidSumS)[387]
-quartz()
 png(file.path(dirs$figs, "sp_area_mean_curve.png"),
     height = 4, 
     width = 7, 
@@ -219,16 +223,19 @@ png(file.path(dirs$figs, "sp_area_mean_curve.png"),
          lty = 2, 
          lwd = 1.5, 
          ylab = "", 
-         xlab = "")
+         xlab = "",
+         yaxt = "n",
+         ylim = c(0, 25))
     lines(y = rowMeans(coexs[[3]]),
           x = 1:nrow(coexs[[3]]),
           lwd = 2,
-          lty = 2)
+          lty = 3)
+	axis(2, at = c(5, 10, 15, 25), las = 2)
 dev.off()
 #&&&&&&&&&&&&&&&&&&&&
 
 # all simulated coexistence curves
-curve_type <- 1
+curve_type <- 3
 png(file.path(dirs$figs, paste0("coex", curve_type, "_all_curves.png")),
     height = 4, 
     width = 7, 
@@ -351,7 +358,6 @@ x_spat <- x[, c("x", "y", "x_pop", "y_pop")]
 # numbers of unique values
 lapply(apply(x_nums_scaled, 2, unique), length)
 
-
 ### Spatial eigenvector maps
 library(adespatial)
 library(adegraphics)
@@ -382,7 +388,7 @@ lapply(apply(mems_sel, 2, unique), length)
 # 		 #bg = round(mor_plants[, vec] + abs(min(mor_plants[, vec]) * 10)))
 # }
 
-#&&& FIGURE S2 &&&&&
+#&&& FIGURE S4 &&&&&
 png(file.path(dirs$figs,
               paste0("MEMs_", paste(vecs, collapse = "_"), ".png")), 
     height = 10, 
@@ -399,6 +405,37 @@ png(file.path(dirs$figs,
 	}
 dev.off()
 #&&&&&&&&&&&&&&&&&&&&
+
+#&&& FIGURE S3 &&&&&
+greys <- gray(seq(0, 0.7, length.out = 20))
+pops <- cbind(dat$X$pop, NA)
+for (i in 1:length(unique(pops[,1]))) {
+	bop <- unique(pops[,1])[i]
+	pops[which(pops[,1] == bop), 2] <- greys[i]
+}
+png(file.path(dirs$figs,
+              "MEMs_map.png"), 
+    height = 10, 
+    width = 10, 
+    bg = "transparent",
+    units = "in", 
+    res = 300)
+	par(mfrow = c(2, 2), family = "serif")
+	for (i in 1:4) {
+		szs <- round(mems_sel[,i] + abs(min(mems_sel[,i])), 2) + 1
+		amnt <- 1500
+		set.seed(7)
+		plot(x = jitter(x_spat$x, amount = amnt), 
+			 y = jitter(x_spat$y, amount = amnt),
+			 main = paste("MEM", vecs[i]),
+			 xlab = "",
+			 ylab = "",
+			 cex = szs,
+			 col = pops[,2])
+	}
+dev.off()
+#&&&&&&&&&&&&&&&&&&&&
+
 
 ### combine Xs
 x_and_mems <- as.data.frame(cbind(x_nums_scaled, x_bools, mems_sel))
@@ -719,6 +756,7 @@ saveRDS(bootedCRF_w_host,
         file = file.path(dirs$fits, fileName))
 
 fileBody <- paste0("_sampleprop", sampleProp, "_boots", nBoot, ".rds")
+
 bootedMRF <- readRDS(file = file.path(dirs$fits, paste0("bootedMRF", fileBody)))
 bootedCRF_w_env_mems <- readRDS(file = file.path(dirs$fits, 
 												 paste0("bootedCRF_w_env_mems", fileBody)))
@@ -879,7 +917,7 @@ for (i in 1:length(adj_mats)) {
     igraph::E(adj_mats[[i]])$color <- ifelse(igraph::E(adj_mats[[i]])$weight < 0, 
                                              cols[1], 
                                              cols[2])
-    igraph::E(adj_mats[[i]])$width <- abs(igraph::E(adj_mats[[i]])$weight) * 4
+    igraph::E(adj_mats[[i]])$width <- abs(igraph::E(adj_mats[[i]])$weight) * 5
     adj_mats[[i]] <- igraph::delete.vertices(adj_mats[[i]], 
                                              igraph::degree(adj_mats[[i]]) == 0)
 }
@@ -993,7 +1031,7 @@ for (i in 1:length(adj_mats_diffs)) {
     igraph::E(adj_mats_diffs[[i]])$color <- ifelse(igraph::E(adj_mats_diffs[[i]])$weight < 0, 
                                                    cols[1], 
                                                    cols[2])
-    igraph::E(adj_mats_diffs[[i]])$width <- abs(igraph::E(adj_mats_diffs[[i]])$weight) * 4
+    igraph::E(adj_mats_diffs[[i]])$width <- abs(igraph::E(adj_mats_diffs[[i]])$weight) * 5
     adj_mats_diffs[[i]] <- igraph::delete.vertices(adj_mats_diffs[[i]], 
                                                    igraph::degree(adj_mats_diffs[[i]]) == 0)
 }
@@ -1026,6 +1064,7 @@ for (i in 1:length(adj_mats_diffs)) {
         #set.seed(10)
         plot(adj_mats_diffs[[i]], 
              edge.curved = 0.4,
+             edge.lty = 2,
              vertex.size = 6,
              vertex.color = "grey80",
              vertex.label.color = "black",
@@ -1059,7 +1098,6 @@ cbind(rownames(mod$direct_coef_means)[sigs[,1]],
 sig_direct_env_effects <- cbind(rownames(mod$direct_coef_means)[sigs[,1]], 
                                 colnames(mod$direct_coef_means)[sigs[,2]], 
                                 round(mod$direct_coef_means[sigs], 2))
-head(sig_direct_env_effects)
 write.table(sig_direct_env_effects,
             file = file.path(dirs$fits,"direct_sig_env_effs.csv"),
             quote = FALSE,
@@ -1068,4 +1106,3 @@ write.table(sig_direct_env_effects,
 
 
 ##########################################################################################
-# 110521

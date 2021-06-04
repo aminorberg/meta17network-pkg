@@ -6,7 +6,7 @@
 #' @param sample_ids Vector of row identifiers that matches with Y and xy
 #' @param dirs Directories
 #' @param nsim Number of simulations
-#' @return List of coexistence simulations: First coexistences alway within the same plant, second pooled coexistences
+#' @return List: 1) (True) coexistences always within the same plant, 2) pooled coexistences, 3) cumulative species richness 
 #' @export
 
 coexistence_curves <- function(Y, xy, sample_ids, dirs, nsim = 100) {
