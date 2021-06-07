@@ -1,10 +1,10 @@
 #' (Co)infections by population
 #'
 #' Calculate coinfections for host populations
-#' @param dirs Directories
+#' @param dirs Directories, created with 'set_dirs'
 #' @param Y Virus community data
-#' @param POPs Numerical vector indicating the host populations for Y
 #' @param pop_lifes List of selected populations' names, e.g. list("1", "2", ...)
+#' @param POPs Numerical vector indicating the host populations for Y
 #' @return List of results for the analysis 
 #' @export
 

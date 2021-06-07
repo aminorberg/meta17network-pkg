@@ -7,6 +7,8 @@
 process_data(dirs, return_data = TRUE, save_data = TRUE, rmNAs = TRUE)
 }
 \arguments{
+\item{dirs}{Directories created with 'set_dirs'}
+
 \item{return_data}{Return the data}
 
 \item{save_data}{Save the data}
@@ -14,5 +16,5 @@ process_data(dirs, return_data = TRUE, save_data = TRUE, rmNAs = TRUE)
 \item{rmNAs}{Remove rows containing NAs from the merged data frame}
 }
 \description{
-Modify meta17 data
+Modify the meta17 virus community data
 }

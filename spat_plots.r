@@ -1,9 +1,14 @@
 rm(list = ls(all = TRUE)) ; gc()
+
+# define the working directory again
 working_dir <- "/Users/annanorberg/switchdrive/UZH/Projects/META/meta17network-pkg"
+
 setwd(working_dir)
 library("meta17network")
+
 dirs <- set_dirs(working_dir = working_dir)
 #saveRDS(dirs, file = file.path(working_dir, "dirs.rds"))
+#install.packages(c("spMaps", "smoothr", "wesanderson"))
 
 dat <- process_data(dirs = dirs,
                     return_data = TRUE,
@@ -11,11 +16,7 @@ dat <- process_data(dirs = dirs,
                     rmNAs = TRUE)
 
 library(spMaps)
-library(raster)
-library(rgdal)
-library(autoimage)
-library(sf)
-library(units)
+library(wesanderson)
 library(smoothr)
 
 # maps
@@ -71,7 +72,6 @@ png(file.path(dirs$figs,
 dev.off()
 
 # populations
-library(wesanderson)
 wesandcols_sel <- c(wes_palette("GrandBudapest1"),
                     wes_palette("GrandBudapest2"),
                     wes_palette("Zissou1"),

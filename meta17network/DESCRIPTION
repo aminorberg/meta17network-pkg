@@ -9,28 +9,18 @@ Authors@R:
            comment = c(ORCID = "0000-0002-3520-1043"))
 Description: A package for analysing wild virus communities hosted by natural populations of Plantago lanceolata with Conditional Random Fields.
 Imports:
-    MRFcov,
+	vegan,
+	corrplot,
+	adespatial,
+	spdep,
+	MRFcov,
+	ape,
+	NetComp,
     dummies,
     devtools,
-    vegan,
-    ape,
-    adespatial,
     caret,
     dplyr,
-    cooccur,
-    betapart
-Suggests:
-    RColorBrewer,
-    wesanderson,
-    matrixcalc,
-    plot.matrix,
-    rgdal,
-    autoimage,
-    raster,
-    sf,
-    units,
-    smoothr,
-    spMaps
+    wesanderson
 License: GPL (>= 2)
 LazyData: true
 RoxygenNote: 7.1.1

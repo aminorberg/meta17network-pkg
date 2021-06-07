@@ -1,8 +1,12 @@
 
 rm(list = ls(all = TRUE)) ; gc()
+
+# define the working directory again
 working_dir <- "/Users/annanorberg/switchdrive/UZH/Projects/META/meta17network-pkg"
+
 setwd(working_dir)
 library("meta17network")
+
 dirs <- set_dirs(working_dir = working_dir)
 #saveRDS(dirs, file = file.path(working_dir, "dirs.rds"))
 
@@ -262,10 +266,6 @@ dev.off()
 ### Y
 y_all <- as.matrix(dat$Y)
 y_all_cocs <- t(y_all) %*% y_all
-#y_all_cocs[upper.tri(y_all_cocs)] <- NA
-#diag(y_all_cocs) <- NA
-#which(y_all_cocs == 0, arr.ind = TRUE)
-# only one pair never coexists: Avsunviroidae and Alphasatellitidae
 colSums(y_all[rowSums(y_all) == 1,]) # single infections
 
 # subset 
@@ -275,8 +275,6 @@ dat1 <- dat
 dat1$Y <- dat1$Y[, sp_subset]
 y <- as.matrix(dat1$Y)
 y_cocs <- t(y) %*% y
-#y_cocs[upper.tri(y_cocs)] <- NA
-#diag(y_cocs) <- NA
 
 #&&& FIGURE 3A &&&&&
 library(corrplot)
@@ -360,7 +358,6 @@ lapply(apply(x_nums_scaled, 2, unique), length)
 
 ### Spatial eigenvector maps
 library(adespatial)
-library(adegraphics)
 library(spdep)
 
 mor_plants <- dbmem(x_spat[, c("x", "y")], 
@@ -376,18 +373,6 @@ vecs <- c(1:3, 9)
 mems_sel <- mor_plants[, vecs]
 lapply(apply(mems_sel, 2, unique), length)
 
-# colrs <- load_colour_palette()
-# par(mfrow = c(1, length(vecs)))
-# fac <- 500
-# for (vec in vecs) {
-# 	plot(jitter(x_spat[, "x"], factor = fac),jitter(x_spat[, "y"], factor = fac), 
-# 		 pch = 21,
-# 		 #cex = abs(mor_nonnull[, vec]) * 1.5,
-# 		 cex = (mor_plants[, vec] + abs(min(mor_plants[, vec])) + 0.5) * 1,
-# 		 bg = colrs[[1]][as.numeric(x_facs$pop)])
-# 		 #bg = round(mor_plants[, vec] + abs(min(mor_plants[, vec]) * 10)))
-# }
-
 #&&& FIGURE S4 &&&&&
 png(file.path(dirs$figs,
               paste0("MEMs_", paste(vecs, collapse = "_"), ".png")), 
@@ -397,8 +382,8 @@ png(file.path(dirs$figs,
     units = "in", 
     res = 300)
 	par(mfrow = c(2, 2))
-	for (vec in vecs) {
-		plot(mems_sel, 
+	for (i in 1:length(vecs)) {
+		plot(mems_sel[, i], 
 			 type = "l",
 			 ylab = "Eigenvalues",
 			 xlab = "Host plant")
@@ -421,7 +406,7 @@ png(file.path(dirs$figs,
     units = "in", 
     res = 300)
 	par(mfrow = c(2, 2), family = "serif")
-	for (i in 1:4) {
+	for (i in 1:length(vecs)) {
 		szs <- round(mems_sel[,i] + abs(min(mems_sel[,i])), 2) + 1
 		amnt <- 1500
 		set.seed(7)
@@ -689,7 +674,7 @@ lapply(cv_res, apply, 2, quantile, probs = c(0.025, 0.5, 0.975), na.rm = TRUE)
 # high specificity, so very few false positives
 
 # 3.5 Fitting final CRFs with bootstrapping (for obtaining parameter uncertainties)
-library(MRFcov)
+#library(MRFcov)
 
 sampleProp <- 1
 nBoot <- 100

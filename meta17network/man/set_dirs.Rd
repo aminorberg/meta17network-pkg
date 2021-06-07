@@ -10,11 +10,9 @@ set_dirs(working_dir, fit_fold = "fits")
 \item{working_dir}{Full path to the working directory, under which everything else will be created.}
 
 \item{fit_fold}{Folder where the model fits will be saved  (defaults to "fits")}
-
-\item{data_fold}{Folder for the modified data (defaults to "mod_data")}
 }
 \value{
-List of directories needed for the modelling pipeline
+List of directories needed for the modelling pipeline, automatically created as subdirectories under the working_dir
 }
 \description{
 Defining directories/paths to be used

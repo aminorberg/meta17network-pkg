@@ -1,9 +1,10 @@
 #' Process meta17 data
 #'
-#' Modify meta17 data
-#' @param save_data Save the data
+#' Modify the meta17 virus community data
+#' @param dirs Directories created with 'set_dirs'
 #' @param return_data Return the data
-#' @param rmNAs Remove rows containing NAs from the merged data frame
+#' @param save_data Save the data
+#' @param rmNAs Remove rows containing NAs from the merged data frame 
 #' @export
 
 process_data <- function(dirs,

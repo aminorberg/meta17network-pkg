@@ -13,7 +13,7 @@ coinfs_by_pop(Y, pop_lifes, POPs, dirs)
 
 \item{POPs}{Numerical vector indicating the host populations for Y}
 
-\item{dirs}{Directories}
+\item{dirs}{Directories, created with 'set_dirs'}
 }
 \value{
 List of results for the analysis
