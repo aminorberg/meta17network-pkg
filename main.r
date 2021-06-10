@@ -20,6 +20,7 @@ dat <- process_data(dirs = dirs,
 warnings()
 # these warnings are related to the missing covariate data for four plants,
 # which are consequently removed from the final data set for analysis (400 -> 396 plants)
+names(dat)
 
 max(colSums(dat$Y)/nrow(dat$Y)) # max prevalence 33%
 min(colSums(dat$Y)/nrow(dat$Y)) # min prevalence 0.5%
@@ -97,61 +98,61 @@ y_ls <- as.list(t_y)
 # number of unique virus combinations
 length(unique(y_ls))
 
-#&&& FIGURE 2C-D #&&&&&
-library(corrplot)
-virus_colrs <- load_colour_palette()[[1]][1:25]
+# &&& FIGURE 2C-D #&&&&&
+# library(corrplot)
+# virus_colrs <- load_colour_palette()[[1]][1:25]
 # based on species richness and population nestedness, 
 # the two most contrasting populations are 861 and 3222
-wpop <- "861"
-#wpop <- "3222"
-toPLot <- dat$Y[which(dat$X$pop == wpop),]
-png(file.path(dirs$figs, paste0("viruses_by_plant_pop", wpop, ".png")),
-    height = 4, 
-    width = 6, 
-    bg = "transparent",
-    units = "in", 
-    res = 300)
-    par(family = "serif", mar = c(1,2,1,1))
-    barplot(t(toPLot[order(rowSums(toPLot), decreasing = TRUE),]),
-            col = virus_colrs,
-            ylim = c(0, 25),
-            xaxt = "n",
-            las = 2)
-dev.off()
-
-png(file.path(dirs$figs, "viruses_by_plant_pop_legend.png"),
-    height = 8, 
-    width = 4, 
-    bg = "transparent",
-    units = "in", 
-    res = 300)
-    par(family = "serif", mar = c(1,2,1,1))
-    plot(rep(1, 10), y = 1:10, type = "n", xaxt = "n", yaxt = "n", bty = "n")
-    legend(x = 1, y = 10, legend = colnames(dat$Y), fill = virus_colrs)
-dev.off()
-#&&&&&&&&&&&&&&&&&&&&
+# wpop <- "861"
+# wpop <- "3222"
+# toPLot <- dat$Y[which(dat$X$pop == wpop),]
+# png(file.path(dirs$figs, paste0("viruses_by_plant_pop", wpop, ".png")),
+#     height = 4, 
+#     width = 6, 
+#     bg = "transparent",
+#     units = "in", 
+#     res = 300)
+#     par(family = "serif", mar = c(1,2,1,1))
+#     barplot(t(toPLot[order(rowSums(toPLot), decreasing = TRUE),]),
+#             col = virus_colrs,
+#             ylim = c(0, 25),
+#             xaxt = "n",
+#             las = 2)
+# dev.off()
+# 
+# png(file.path(dirs$figs, "viruses_by_plant_pop_legend.png"),
+#     height = 8, 
+#     width = 4, 
+#     bg = "transparent",
+#     units = "in", 
+#     res = 300)
+#     par(family = "serif", mar = c(1,2,1,1))
+#     plot(rep(1, 10), y = 1:10, type = "n", xaxt = "n", yaxt = "n", bty = "n")
+#     legend(x = 1, y = 10, legend = colnames(dat$Y), fill = virus_colrs)
+# dev.off()
+# &&&&&&&&&&&&&&&&&&&&
 
 # (virus (co)incidences at the contrasting populations)
-wpop <- "861"
-#wpop <- "3222"
-incids <- t(dat$Y[which(dat$X$pop == wpop),]) %*% as.matrix(dat$Y[which(dat$X$pop == wpop),])
-png(file.path(dirs$figs, paste0("co_occs_pop", wpop, ".png")),
-    height = 10, 
-    width = 8, 
-    bg = "transparent",
-    units = "in", 
-    res = 300)
-    par(family = "serif", mar = c(0,5,5,5))
-    corrplot(incids, 
-			 is.corr = FALSE,
-			 method = "number",
-			 type = "lower",
-			 order = "AOE",
-			 tl.col = "black",
-			 cl.pos = "n",
-			 addgrid.col = "black",
-			 col = colorRampPalette(c("white","black"))(100))
-dev.off()
+# wpop <- "861"
+# wpop <- "3222"
+# incids <- t(dat$Y[which(dat$X$pop == wpop),]) %*% as.matrix(dat$Y[which(dat$X$pop == wpop),])
+# png(file.path(dirs$figs, paste0("co_occs_pop", wpop, ".png")),
+#     height = 10, 
+#     width = 8, 
+#     bg = "transparent",
+#     units = "in", 
+#     res = 300)
+#     par(family = "serif", mar = c(0,5,5,5))
+#     corrplot(incids, 
+# 			 is.corr = FALSE,
+# 			 method = "number",
+# 			 type = "lower",
+# 			 order = "AOE",
+# 			 tl.col = "black",
+# 			 cl.pos = "n",
+# 			 addgrid.col = "black",
+# 			 col = colorRampPalette(c("white","black"))(100))
+# dev.off()
 
 # (coinfections per population)
 coinfs <- coinfs_by_pop(Y = dat$Y, 
@@ -184,8 +185,6 @@ coexs <- coexistence_curves(Y = dat$Y,
 							sample_ids = dat$X[, "sampleID"], 
 							dirs = dirs, 
 							nsim = 100)
-
-(((rowMeans(coexs[[3]])[sam])^2) - (rowMeans(coexs[[3]])[sam])) / 2
 
 #&&& FIGURE 3B &&&&&
 # coexistence mean curve
@@ -239,7 +238,7 @@ dev.off()
 #&&&&&&&&&&&&&&&&&&&&
 
 # all simulated coexistence curves
-curve_type <- 3
+curve_type <- 1
 png(file.path(dirs$figs, paste0("coex", curve_type, "_all_curves.png")),
     height = 4, 
     width = 7, 
@@ -293,13 +292,12 @@ png(file.path(dirs$figs, "co_occs_all.png"),
              tl.col = "black",
              cl.pos = "n",
              addgrid.col = "black",
-			 col = colorRampPalette(c(rep("#FFFFFF", 4), 
-									  "#D1E5F0",
-									  "#92C5DE", 
+			 col = colorRampPalette(c("#FFFFFF", 
 									  "#4393C3", 
-									  "#2166AC"))(200),
+									  "#2166AC"))(100),
              bg = "transparent")
     corrplot(y_all_cocs, 
+			 number.digits = 0,
              is.corr = FALSE,
 			 add = TRUE,
              method = "number",
@@ -311,27 +309,7 @@ png(file.path(dirs$figs, "co_occs_all.png"),
              bg = "transparent",
              col = "black")
 dev.off()
-#&&&&&&&&&&&&&&&&&&&&
-
-# (coinfections in the subsetted data)
-y_coinfs <- y
-colnames(y_coinfs) <- sub("sp_", "", colnames(y_coinfs))
-colnames(y_coinfs) <- sub("viridae", "", colnames(y_coinfs))
-colnames(y_coinfs) <- sub("viroidae", "", colnames(y_coinfs))
-colnames(y_coinfs) <- sub("tidae", "", colnames(y_coinfs))
-tmp1 <- toString(colnames(y_coinfs)[y_coinfs[1,] == 1])
-for (i in 2:nrow(y_coinfs)) {
-    tmp2 <- toString(colnames(y_coinfs)[y_coinfs[i,] == 1])
-    tmp1 <- rbind(tmp1, tmp2)
-}
-tmp1[which(tmp1 == "")] <- "No infection"
-y_coinfs <- lapply(tmp1, sort)
-y_coinfs <- table(sort(unlist(y_coinfs)))
-y_coinfs <- all_coinfs[order(y_coinfs)]
-#saveRDS(y_coinfs, file = file.path(dirs$fits, "y_coinfs.rds"))
-par(mar = c(70, 3, 1, 1), family = "serif")
-barplot(y_coinfs, las = 2)
-
+#&&&&&&&&&&&&&&&&&&&
 
 ### X
 x <- as.data.frame(dat1$X)
@@ -526,36 +504,7 @@ aucs
 # CRF is better than just MRF, but there is no big difference
 # whether one includes spatial predictors and/or landscape and/or host variables
 
-# 3.4.2 calculating Tjur R2s
-    # Tjur R2 : for each of the two categories of the dependent variable, 
-    # calculate the mean of the predicted probabilities of an event,
-    # then, take the difference between those two means.
-probs <- list("env_and_mems" = preds_crf1_mem$Probability_predictions,
-              "only_mems" = preds_crf1_only_mem$Probability_predictions,
-              "only_env" = preds_crf1$Probability_predictions,
-              "only_host" = preds_crf1_host$Probability_predictions,
-              "only_habi" = preds_crf1_habi$Probability_predictions,
-              "mrf" = preds_mrf1$Probability_predictions)
-tjuR2s <- list()
-for (p in 1:length(probs)) {
-    tmp <- NA
-    for (i in 1:ncol(y)){                       # for all species separately
-        tmp <- c(tmp, mean(probs[[p]][,i][y[,i] == 1]) - mean(probs[[p]][,i][y[,i] == 0]))            
-    }
-    tjuR2s[[p]] <- matrix(tmp[-1], ncol = 1)
-    rownames(tjuR2s[[p]]) <- colnames(y)
-}
-names(tjuR2s) <- names(probs)
-lapply(tjuR2s, mean)
-
-plot(x = 1:length(tjuR2s), y = seq(0, 0.5, length.out = length(tjuR2s)), type = "n", xaxt = "n", xlab = "", ylab = "Tjur R^2")
-for (i in 1:length(tjuR2s)) {
-    points(x = rep(i, times = length(tjuR2s[[i]])), y = tjuR2s[[i]], pch = 21, bg = "grey")
-    points(x = i, y = mean(tjuR2s[[i]]), pch = 21, bg = "red3", cex = 1.5)
-}
-#mean(probs[[1]][y == 1]) - mean(probs[[1]][y == 0])   # for the whole data
-
-# 3.4.3 Cross-validation
+# 3.4.2 Cross-validation
 
 # environment and MEMs
 crf_env_mems_cv <- lapply(seq_len(100), 
@@ -653,8 +602,8 @@ cv_res <- list("env_and_mems" = crf_env_and_mems_cv,
                "only_host" = crf_only_host_cv,
                "only_habi" = crf_only_habi_cv,
                "mrf" = mrf_cv)
-str(cv_res)
 saveRDS(cv_res, file = file.path(dirs$fits, "cv_res.rds"))
+
 cv_res <- readRDS(file = file.path(dirs$fits, "cv_res.rds"))
 lapply(cv_res, apply, 2, quantile, probs = c(0.025, 0.5, 0.975), na.rm = TRUE)
 #pos_pred = the proportion of true positives out of all predicted positives
@@ -742,19 +691,18 @@ saveRDS(bootedCRF_w_host,
 
 fileBody <- paste0("_sampleprop", sampleProp, "_boots", nBoot, ".rds")
 
-bootedMRF <- readRDS(file = file.path(dirs$fits, paste0("bootedMRF", fileBody)))
-bootedCRF_w_env_mems <- readRDS(file = file.path(dirs$fits, 
-												 paste0("bootedCRF_w_env_mems", fileBody)))
-bootedCRF_w_mems_only <- readRDS(file = file.path(dirs$fits, 
-												  paste0("bootedCRF_w_mems_only", 
-												  		 fileBody)))
-bootedCRF_w_env <- readRDS(file = file.path(dirs$fits, 
-											paste0("bootedCRF_w_env", fileBody)))
-bootedCRF_w_habi <- readRDS(file = file.path(dirs$fits, 
-											 paste0("bootedCRF_w_habi", fileBody)))
-bootedCRF_w_host <- readRDS(file = file.path(dirs$fits, 
-											 paste0("bootedCRF_w_host", fileBody)))
-
+# bootedMRF <- readRDS(file = file.path(dirs$fits, paste0("bootedMRF", fileBody)))
+# bootedCRF_w_env_mems <- readRDS(file = file.path(dirs$fits, 
+# 												 paste0("bootedCRF_w_env_mems", fileBody)))
+# bootedCRF_w_mems_only <- readRDS(file = file.path(dirs$fits, 
+# 												  paste0("bootedCRF_w_mems_only", 
+# 												  		 fileBody)))
+# bootedCRF_w_env <- readRDS(file = file.path(dirs$fits, 
+# 											paste0("bootedCRF_w_env", fileBody)))
+# bootedCRF_w_habi <- readRDS(file = file.path(dirs$fits, 
+# 											 paste0("bootedCRF_w_habi", fileBody)))
+# bootedCRF_w_host <- readRDS(file = file.path(dirs$fits, 
+# 											 paste0("bootedCRF_w_host", fileBody)))
 booted_models <- list("MRF" = bootedMRF, 
                       "CRF_env_mems" = bootedCRF_w_env_mems, 
                       "CRF_env" = bootedCRF_w_env, 
@@ -931,6 +879,8 @@ vert_lab_deg[["CRF_env"]][which(igraph::vertex_attr(adj_mats[["CRF_env"]])$name 
 vert_lab_deg[["CRF_env_mems"]][which(igraph::vertex_attr(adj_mats[["CRF_env_mems"]])$name == "Tombus")] <- pi/2
 
 #&&& FIGURE 4A-B, F in main text &&&&&
+# create subdirectory for igraphs
+dir.create(file.path(dirs$figs, "igraphs"))
 
 for (i in 1:length(adj_mats)) {
     png(file.path(dirs$figs, 

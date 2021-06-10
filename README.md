@@ -22,10 +22,8 @@ library(meta17network)
 
 All the steps below depend on the succesfull installation of the 'meta17network' package.
 
-1) The 'main' script contains the full workflow from data processing and descriptive
-illustrations to model fitting and validation. 
+1) The 'main' script contains the full workflow from data processing to model fitting and validation. 
 
-2) With the standalone 'spat_plots' one can make spatial plots of Åland and the study sites. 
+2) With the standalone 'coinf_plots' one can make descriptive plots of the local virus communities. 
 
-3) All the original, unprocessed data files are in the folder 'data' and the results of
-data processing, i.e. the data used for the analysis, are in folder 'mod_data'.
+3) The data used for the illustration and analysis are in folder 'mod_data'.

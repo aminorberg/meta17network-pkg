@@ -19,8 +19,7 @@ Imports:
     dummies,
     devtools,
     caret,
-    dplyr,
-    wesanderson
+    dplyr
 License: GPL (>= 2)
 LazyData: true
 RoxygenNote: 7.1.1
