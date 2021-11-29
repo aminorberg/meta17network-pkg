@@ -10,6 +10,7 @@ Authors@R:
 Description: A package for analysing wild virus communities hosted by natural populations of Plantago lanceolata with Conditional Random Fields.
 Imports:
 	vegan,
+	betapart,
 	corrplot,
 	adespatial,
 	spdep,
@@ -22,5 +23,5 @@ Imports:
     dplyr
 License: GPL (>= 2)
 LazyData: true
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Encoding: UTF-8

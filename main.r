@@ -22,13 +22,17 @@ warnings()
 # which are consequently removed from the final data set for analysis (400 -> 396 plants)
 names(dat)
 
-max(colSums(dat$Y)/nrow(dat$Y)) # max prevalence 33%
+max(colSums(dat$Y)/nrow(dat$Y)) # max prevalence 34%
 min(colSums(dat$Y)/nrow(dat$Y)) # min prevalence 0.5%
 sum(rowSums(dat$Y) == 0) / nrow(dat$Y) # 29% empty host plants, 71% infected plants
 sum(rowSums(dat$Y) == 1) / nrow(dat$Y) # 32% single infections
 sum(rowSums(dat$Y) > 1) / nrow(dat$Y) # 40% multi-infections
+sum(rowSums(dat$Y) >= 5) / nrow(dat$Y) # 7% multi-infections of more than 5 viruses
 
 ### 1 DATA EXPLORATION AND DESCRIPTIVE ANALYSIS ##########################################
+
+# all the descriptive illustrations of the data structure for figures 2-3 
+# are done in the stand-alone script 'coinf_plots.r'
 
 # plot virus prevalences
 par(family = "serif", mar = c(8, 3, 1, 1))
@@ -59,6 +63,8 @@ Y_aggr_pops[which(Y_aggr_pops > 0)] <- 1
 rownames(Y_aggr_pops) <- unique(dat$X$pop)
 nest_pops <- nestednodf(Y_aggr_pops)
 plot(nest_pops, names = TRUE, col = "grey50")
+saveRDS(nest_pops, file = file.path(dirs$fits, "nest_pops.rds"))
+
 # C score
 oecosimu(Y_aggr_pops, nestedchecker, "r0", statistic = "C.score")
 
@@ -86,7 +92,8 @@ png(file.path(dirs$figs, "nestedness_bypop.png"),
 dev.off()
 #&&&&&&&&&&&&&&&&&&&&
 
-# 1.2 Co-occurrence illustration and analysis
+
+# 1.2 Co-occurrence analysis
 
 # how many times do viruses occur and co-occur?
 incidences <- t(dat$Y) %*% as.matrix(dat$Y)
@@ -97,86 +104,6 @@ t_y <- data.frame(t(dat$Y))
 y_ls <- as.list(t_y)
 # number of unique virus combinations
 length(unique(y_ls))
-
-# &&& FIGURE 2C-D #&&&&&
-# library(corrplot)
-# virus_colrs <- load_colour_palette()[[1]][1:25]
-# based on species richness and population nestedness, 
-# the two most contrasting populations are 861 and 3222
-# wpop <- "861"
-# wpop <- "3222"
-# toPLot <- dat$Y[which(dat$X$pop == wpop),]
-# png(file.path(dirs$figs, paste0("viruses_by_plant_pop", wpop, ".png")),
-#     height = 4, 
-#     width = 6, 
-#     bg = "transparent",
-#     units = "in", 
-#     res = 300)
-#     par(family = "serif", mar = c(1,2,1,1))
-#     barplot(t(toPLot[order(rowSums(toPLot), decreasing = TRUE),]),
-#             col = virus_colrs,
-#             ylim = c(0, 25),
-#             xaxt = "n",
-#             las = 2)
-# dev.off()
-# 
-# png(file.path(dirs$figs, "viruses_by_plant_pop_legend.png"),
-#     height = 8, 
-#     width = 4, 
-#     bg = "transparent",
-#     units = "in", 
-#     res = 300)
-#     par(family = "serif", mar = c(1,2,1,1))
-#     plot(rep(1, 10), y = 1:10, type = "n", xaxt = "n", yaxt = "n", bty = "n")
-#     legend(x = 1, y = 10, legend = colnames(dat$Y), fill = virus_colrs)
-# dev.off()
-# &&&&&&&&&&&&&&&&&&&&
-
-# (virus (co)incidences at the contrasting populations)
-# wpop <- "861"
-# wpop <- "3222"
-# incids <- t(dat$Y[which(dat$X$pop == wpop),]) %*% as.matrix(dat$Y[which(dat$X$pop == wpop),])
-# png(file.path(dirs$figs, paste0("co_occs_pop", wpop, ".png")),
-#     height = 10, 
-#     width = 8, 
-#     bg = "transparent",
-#     units = "in", 
-#     res = 300)
-#     par(family = "serif", mar = c(0,5,5,5))
-#     corrplot(incids, 
-# 			 is.corr = FALSE,
-# 			 method = "number",
-# 			 type = "lower",
-# 			 order = "AOE",
-# 			 tl.col = "black",
-# 			 cl.pos = "n",
-# 			 addgrid.col = "black",
-# 			 col = colorRampPalette(c("white","black"))(100))
-# dev.off()
-
-# (coinfections per population)
-coinfs <- coinfs_by_pop(Y = dat$Y, 
-                        POPs = dat$X$pop, 
-                        dirs = dirs, 
-                        pop_lifes = list("861" = NA, "3225" = NA))
-saveRDS(coinfs, file = file.path(dirs$fits, "coinfs.rds"))
-
-# (coinfections in the full data)
-y_coinfs <- dat$Y
-colnames(y_coinfs) <- sub("sp_", "", colnames(y_coinfs))
-colnames(y_coinfs) <- sub("viridae", "", colnames(y_coinfs))
-colnames(y_coinfs) <- sub("viroidae", "", colnames(y_coinfs))
-colnames(y_coinfs) <- sub("tidae", "", colnames(y_coinfs))
-tmp1 <- toString(colnames(y_coinfs)[y_coinfs[1,] == 1])
-for (i in 2:nrow(y_coinfs)) {
-    tmp2 <- toString(colnames(y_coinfs)[y_coinfs[i,] == 1])
-    tmp1 <- rbind(tmp1, tmp2)
-}
-tmp1[which(tmp1 == "")] <- "No infection"
-all_coinfs <- lapply(tmp1, sort)
-all_coinfs <- table(sort(unlist(all_coinfs)))
-all_coinfs <- all_coinfs[order(all_coinfs)]
-saveRDS(all_coinfs, file = file.path(dirs$fits, "all_coinfs.rds"))
 
 # Coexistence and species-area curves
 set.seed(7)
@@ -275,41 +202,6 @@ dat1$Y <- dat1$Y[, sp_subset]
 y <- as.matrix(dat1$Y)
 y_cocs <- t(y) %*% y
 
-#&&& FIGURE 3A &&&&&
-library(corrplot)
-png(file.path(dirs$figs, "co_occs_all.png"),
-    height = 11, 
-    width = 9, 
-    bg = "transparent",
-    units = "in", 
-    res = 300)
-    par(family = "serif", mar = c(0,5,5,5))
-    corrplot(y_all_cocs,
-             is.corr = FALSE,
-             method = "shade",
-             type = "lower",
-             order = "FPC",
-             tl.col = "black",
-             cl.pos = "n",
-             addgrid.col = "black",
-			 col = colorRampPalette(c("#FFFFFF", 
-									  "#4393C3", 
-									  "#2166AC"))(100),
-             bg = "transparent")
-    corrplot(y_all_cocs, 
-			 number.digits = 0,
-             is.corr = FALSE,
-			 add = TRUE,
-             method = "number",
-             type = "lower",
-             order = "FPC",
-             tl.col = "black",
-             cl.pos = "n",
-             addgrid.col = "black",
-             bg = "transparent",
-             col = "black")
-dev.off()
-#&&&&&&&&&&&&&&&&&&&
 
 ### X
 x <- as.data.frame(dat1$X)
@@ -351,61 +243,42 @@ vecs <- c(1:3, 9)
 mems_sel <- mor_plants[, vecs]
 lapply(apply(mems_sel, 2, unique), length)
 
-#&&& FIGURE S4 &&&&&
+# &&& FIGURE S3 &&&&&
 png(file.path(dirs$figs,
-              paste0("MEMs_", paste(vecs, collapse = "_"), ".png")), 
-    height = 10, 
-    width = 10, 
-    bg = "transparent",
-    units = "in", 
-    res = 300)
-	par(mfrow = c(2, 2))
-	for (i in 1:length(vecs)) {
-		plot(mems_sel[, i], 
-			 type = "l",
-			 ylab = "Eigenvalues",
-			 xlab = "Host plant")
-	}
-dev.off()
-#&&&&&&&&&&&&&&&&&&&&
-
-#&&& FIGURE S3 &&&&&
-greys <- gray(seq(0, 0.7, length.out = 20))
-pops <- cbind(dat$X$pop, NA)
-for (i in 1:length(unique(pops[,1]))) {
-	bop <- unique(pops[,1])[i]
-	pops[which(pops[,1] == bop), 2] <- greys[i]
-}
-png(file.path(dirs$figs,
-              "MEMs_map.png"), 
+              "MEMs_squares_map.png"), 
     height = 10, 
     width = 10, 
     bg = "transparent",
     units = "in", 
     res = 300)
 	par(mfrow = c(2, 2), family = "serif")
-	for (i in 1:length(vecs)) {
-		szs <- round(mems_sel[,i] + abs(min(mems_sel[,i])), 2) + 1
+	for (i in 1:ncol(mems_sel)) {
 		amnt <- 1500
 		set.seed(7)
+		pointscols <- mems_sel[,i]
+		pointscols[which(mems_sel[,i] >= 0)] <- "white"
+		pointscols[which(mems_sel[,i] < 0)] <- "black"
+		pointscols2 <- mems_sel[,i]
+		pointscols2[which(mems_sel[,i] >= 0)] <- "black"
+		pointscols2[which(mems_sel[,i] < 0)] <- "white"
 		plot(x = jitter(x_spat$x, amount = amnt), 
-			 y = jitter(x_spat$y, amount = amnt),
+			 y = jitter(x_spat$y, amount = amnt), 
+			 col = pointscols2, 
+			 bg = pointscols, 
+			 cex = abs(mems_sel[,i]) + 0.25, 
 			 main = paste("MEM", vecs[i]),
 			 xlab = "",
 			 ylab = "",
-			 cex = szs,
-			 col = pops[,2])
+			 pch = 22)
 	}
 dev.off()
-#&&&&&&&&&&&&&&&&&&&&
-
 
 ### combine Xs
 x_and_mems <- as.data.frame(cbind(x_nums_scaled, x_bools, mems_sel))
 
 # check for correlations
 var_cors <- cor(x_and_mems, use = "na.or.complete")
-max(var_cors[upper.tri(var_cors, diag = FALSE)]) # highest correlation 0.51
+max(var_cors[upper.tri(var_cors, diag = FALSE)]) # highest correlation 0.57
 which(var_cors == max(var_cors[upper.tri(var_cors, diag = FALSE)]), arr.ind = TRUE)
 
 # final data frames
@@ -427,6 +300,9 @@ data_habi_df <- cbind(data_habi_df,
 					  			  "temp_eff_days_summer16")]) 
 data_mems_df <- as.data.frame(cbind(y, x_and_mems))
 data_only_mems_df <- as.data.frame(cbind(y, mems_sel))
+
+
+
 
 # 3 (CONDITIONAL) MARKOV RANDOM FIELDS, (C)MRF ###########################################
 library(MRFcov)
@@ -703,6 +579,7 @@ fileBody <- paste0("_sampleprop", sampleProp, "_boots", nBoot, ".rds")
 # 											 paste0("bootedCRF_w_habi", fileBody)))
 # bootedCRF_w_host <- readRDS(file = file.path(dirs$fits, 
 # 											 paste0("bootedCRF_w_host", fileBody)))
+
 booted_models <- list("MRF" = bootedMRF, 
                       "CRF_env_mems" = bootedCRF_w_env_mems, 
                       "CRF_env" = bootedCRF_w_env, 
@@ -710,6 +587,7 @@ booted_models <- list("MRF" = bootedMRF,
                       "CRF_habi" = bootedCRF_w_habi, 
                       "CRF_host" = bootedCRF_w_host)
 saveRDS(booted_models, file = file.path(dirs$fits, paste0("booted_models", fileBody)))
+
 booted_models <- readRDS(file = file.path(dirs$fits, paste0("booted_models", fileBody)))
 
 tmp <- plotMRF_hm(MRF_mod = booted_models$CRF_env_mems, 
@@ -861,6 +739,7 @@ for (i in 1:length(adj_mats)) {
 }
 names(vert_lab_deg) <- names(adj_mats)
 
+# plotting settings
 vert_lab_deg[["MRF"]][which(igraph::vertex_attr(adj_mats[["MRF"]])$name == "Betaflexi")] <- pi/2
 vert_lab_deg[["MRF"]][which(igraph::vertex_attr(adj_mats[["MRF"]])$name == "Bromo")] <- pi/2
 vert_lab_deg[["MRF"]][which(igraph::vertex_attr(adj_mats[["MRF"]])$name == "Alphaflexi")] <- pi/2
@@ -878,6 +757,7 @@ vert_lab_deg[["CRF_mems"]][which(igraph::vertex_attr(adj_mats[["CRF_mems"]])$nam
 vert_lab_deg[["CRF_env"]][which(igraph::vertex_attr(adj_mats[["CRF_env"]])$name == "Tombus")] <- pi/2
 vert_lab_deg[["CRF_env_mems"]][which(igraph::vertex_attr(adj_mats[["CRF_env_mems"]])$name == "Tombus")] <- pi/2
 
+
 #&&& FIGURE 4A-B, F in main text &&&&&
 # create subdirectory for igraphs
 dir.create(file.path(dirs$figs, "igraphs"))
@@ -893,7 +773,6 @@ for (i in 1:length(adj_mats)) {
         res = 500)
         par(mar = c(1, 4, 1, 10), family = "serif")
         set.seed(73)
-        #set.seed(10)
         plot(adj_mats[[i]], 
              edge.curved = 0.4,
              vertex.size = 6,
@@ -978,6 +857,7 @@ for (i in 1:length(adj_mats_diffs)) {
 }
 names(vert_lab_deg) <- names(adj_mats_diffs)
 
+# plotting settings
 vert_lab_deg[["habi"]][which(igraph::vertex_attr(adj_mats_diffs[["habi"]])$name == "Alphaflexi")] <- 0
 vert_lab_deg[["habi"]][which(igraph::vertex_attr(adj_mats_diffs[["habi"]])$name == "Betaflexi")] <- pi
 vert_lab_deg[["habi"]][which(igraph::vertex_attr(adj_mats_diffs[["habi"]])$name == "Partiti")] <- pi/2
@@ -986,14 +866,15 @@ vert_lab_deg[["habi"]][which(igraph::vertex_attr(adj_mats_diffs[["habi"]])$name 
 
 #&&& FIGURE 4C-E in main text &&&&&
 for (i in 1:length(adj_mats_diffs)) {
-    png(file.path(dirs$figs,
-    			  "igraphs",
-                  paste0("igraph_", names(adj_mats_diffs)[i], "_effect.png")), 
-        height = 8, 
-        width = 8, 
-        bg = "transparent",
-        units = "in", 
-        res = 500)
+quartz()
+#     png(file.path(dirs$figs,
+#     			  "igraphs",
+#                   paste0("igraph_", names(adj_mats_diffs)[i], "_effect.png")), 
+#         height = 8, 
+#         width = 8, 
+#         bg = "transparent",
+#         units = "in", 
+#         res = 500)
         par(mar = c(1, 4, 1, 10), family = "serif")
         set.seed(73)
         #set.seed(10)
@@ -1010,7 +891,7 @@ for (i in 1:length(adj_mats_diffs)) {
 			 vertex.label.degree = vert_lab_deg[[i]],
              #layout = igraph::layout.circle,
              label = TRUE)
-    dev.off()
+#     dev.off()
 }
 # &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 

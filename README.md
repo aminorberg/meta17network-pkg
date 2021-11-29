@@ -22,8 +22,8 @@ library(meta17network)
 
 All the steps below depend on the succesfull installation of the 'meta17network' package.
 
-1) The 'main' script contains the full workflow from data processing to model fitting and validation. 
+1) The 'main' script contains the full workflow from data processing and descriptive analysis to model fitting and validation. 
 
-2) With the standalone 'coinf_plots' one can make descriptive plots of the local virus communities. 
+2) With the stand-alone 'coinf_plots' one can make illustratoins of the local virus communities. 
 
 3) The data used for the illustration and analysis are in folder 'mod_data'.

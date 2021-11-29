@@ -28,6 +28,5 @@ setwd(working_dir)
 install("meta17network")
 
 # check that you can succesfully open up the library
-library("meta17network")
-
 # after this, the scripts of main.r and spat_plots.r should work!
+library("meta17network")
