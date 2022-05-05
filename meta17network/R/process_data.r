@@ -180,18 +180,20 @@ process_data <- function(dirs,
 
     # viruses
     ######################################################################################
-    
-    # viruses
     filename <- "viruses.csv"
     datapath <- filename
     if (!file.exists(datapath)) {
         datapath <- file.path(dirs$dat, filename)
     }
     viruses <- as.data.frame(read.csv2(file.path(datapath))) #check.names = FALSE
-    spat <- viruses[, c("sampleID","pop")]
-    viruses <- viruses[, -which(colnames(viruses) == "pop")]
-    viruses <- viruses[, -which(colnames(viruses) == "plant")]
-    viruses$sampleID <- as.character(viruses$sampleID)
+	viruses$Sample_ID <- gsub(" ", "", viruses$Sample_ID)
+	viruses$Population_ID <- gsub(" ", "", viruses$Population_ID)
+	viruses$Plant <- gsub(" ", "", viruses$Plant)
+    spat <- viruses[, c("Sample_ID","Population_ID")]
+    colnames(spat) <- c("sample_ID", "pop")
+    viruses <- viruses[, -which(colnames(viruses) == "Population_ID")]
+    viruses <- viruses[, -which(colnames(viruses) == "Plant")]
+    viruses$Sample_ID <- as.character(viruses$Sample_ID)
     simplenames <- lapply(strsplit(colnames(viruses)[-1], "[.]"), 
                           grep, 
                           pattern = "vir|dae", 
@@ -207,39 +209,36 @@ process_data <- function(dirs,
     if (!file.exists(datapath)) {
         datapath <- file.path(dirs$dat, filename)
     }
-    virus_host <- as.data.frame(read.csv(file.path(datapath))) #check.names = FALSE
-    virus_host[,1] <- sub(" ", "", as.character(virus_host[,1]))
+    virus_host <- as.data.frame(read.csv2(file.path(datapath))) #check.names = FALSE
     rownames(virus_host) <- paste0("sp_", virus_host[,1])
     virus_host <- virus_host[intersect(rownames(virus_host), colnames(viruses)[-1]), ]
-    virus_host <- virus_host[which(virus_host[, "host"] == "plant" | virus_host[, "host"] == "plant_fungus"), ]
-    viruses <- viruses[, c("sampleID", rownames(virus_host))]
-
+    virus_host <- virus_host[which(virus_host[, "Host"] == "Plant" | virus_host[, "Host"] == "plant_fungus"), ]
+    viruses <- viruses[, c("Sample_ID", rownames(virus_host))]
+	colnames(viruses)[1] <- "sample_ID"
+	
     # virus phylogenies
-    filename <- "virus_phyliptree.phy"
+    filename <- "virus_family_tree.phy"
     datapath <- filename
     if (!file.exists(datapath)) {
         datapath <- file.path(dirs$dat, filename)
     }
     virus_phyl_tree <- ape::read.tree(file = file.path(datapath))
     virus_phyl_tree$tip.label <- paste0("sp_", virus_phyl_tree$tip.label)
-    diffr <- setdiff(virus_phyl_tree$tip.label, 
-                     colnames(viruses)[-1])
+    #diffr <- setdiff(colnames(viruses)[-1], virus_phyl_tree$tip.label)
+    diffr <- setdiff(virus_phyl_tree$tip.label, colnames(viruses)[-1])
     virus_phyl_tree2 <- virus_phyl_tree
     for (i in 1:length(diffr)) {
         virus_phyl_tree2 <- ape::drop.tip(virus_phyl_tree2, 
                                           tip = diffr[i])
     }
     virus_phyl_tree <- virus_phyl_tree2
-
-    # filter with phylogeny
-    viruses2 <- viruses[,c("sampleID", virus_phyl_tree$tip.label)]
-    rownames(viruses2) <- viruses2$sampleID
+    viruses2 <- viruses[,c("sample_ID", virus_phyl_tree$tip.label)]
+    rownames(viruses2) <- viruses2$sample_ID
     viruses <- viruses2
-    Y <- viruses[, -1]
 
     # surrounding vegetation, population variables
-    ##########################################################################################
-    
+    ##########################################################################################    
+
     # plants
     filename <- "plants.csv"
     datapath <- filename
@@ -247,12 +246,12 @@ process_data <- function(dirs,
         datapath <- file.path(dirs$dat, filename)
     }
     plants <- as.data.frame(read.csv(file.path(datapath))) #check.names = FALSE
-    colnames(plants)[colnames(plants) == "Sample.ID"] <- "sampleID"
+    colnames(plants)[colnames(plants) == "Sample.ID"] <- "sample_ID"
     colnames(plants)[colnames(plants) == "Patch"] <- "pop"
     colnames(plants)[colnames(plants) == "Plant.ID"] <- "plant"
     plants <- plants[, -which(colnames(plants) == "pop")]
     plants <- plants[, -which(colnames(plants) == "plant")]
-    plants$sampleID <- as.character(plants$sampleID)
+    plants$sample_ID <- as.character(plants$sample_ID)
     plants$noleaves <- as.numeric(as.character(plants$noleaves))
     plants <- plants[, -which(colnames(plants) == "vein")]
     plants$leaflenght <- as.numeric(as.character(plants$leaflenght))
@@ -312,9 +311,9 @@ process_data <- function(dirs,
     }
     plantcoords <- as.data.frame(read.csv2(file.path(datapath))) #check.names = FALSE
     plantcoords <- plantcoords[c("Sample", "x", "y")]
-    colnames(plantcoords)[which(colnames(plantcoords) == "Sample")] <- "sampleID"
-    plantcoords$sampleID <- as.factor(plantcoords$sampleID)
-    plantcoords$pop <- simplify2array(strsplit(as.character(plantcoords$sampleID), 
+    colnames(plantcoords)[which(colnames(plantcoords) == "Sample")] <- "sample_ID"
+    plantcoords$sample_ID <- as.factor(plantcoords$sample_ID)
+    plantcoords$pop <- simplify2array(strsplit(as.character(plantcoords$sample_ID), 
                                       split = "_"))[1, ]
     plantcoords <- apply(plantcoords, 2, as.character)
     plantcoords <- as.data.frame(plantcoords)
@@ -338,11 +337,11 @@ process_data <- function(dirs,
     }
 
     # merge
-    joined_data <- merge(x = viruses, y = plants, by = "sampleID", all = FALSE, incomparables = NA)
-    joined_data <- merge(x = joined_data, y = spat, by = "sampleID", all = FALSE, incomparables = NA)
+    joined_data <- merge(x = viruses, y = plants, by = "sample_ID", all = FALSE, incomparables = NA)
+    joined_data <- merge(x = joined_data, y = spat, by = "sample_ID", all = FALSE, incomparables = NA)
     joined_data <- merge(x = joined_data, y = populations, by = "pop", all = TRUE, incomparables = NA)
     joined_data <- merge(x = joined_data, y = vegediversity, by = "pop", all = TRUE, incomparables = NA)
-    joined_data <- merge(x = joined_data, y = plantcoords[, -4], by = "sampleID", all = TRUE, incomparables = NA)
+    joined_data <- merge(x = joined_data, y = plantcoords[, -4], by = "sample_ID", all = TRUE, incomparables = NA)
     joined_data <- merge(x = joined_data, y = weathersum, by = "pop", all = TRUE, incomparables = NA)
     joined_data <- merge(x = joined_data, y = agri_area, by = "pop", all = TRUE, incomparables = NA)
 
@@ -355,7 +354,7 @@ process_data <- function(dirs,
 
     Y <- joined_data[, sp_ind]
     X <- joined_data[, -sp_ind]
-    X$sampleID <- as.numeric(as.factor(X$sampleID))
+    X$sample_ID <- as.numeric(as.factor(X$sample_ID))
     Xnum <- apply(X, 2, as.numeric)
     X <- as.data.frame(Xnum)
 
@@ -365,7 +364,7 @@ process_data <- function(dirs,
 
     colnames(Y) <- sub("sp_", "", colnames(Y))
     virus_phyl_tree$tip.label <- sub("sp_", "", virus_phyl_tree$tip.label)
-        
+
     dat <- list(Y = Y,
                 X = X, 
                 phylogeny = virus_phyl_tree, 

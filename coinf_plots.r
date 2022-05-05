@@ -1,16 +1,19 @@
-
 rm(list = ls(all = TRUE)) ; gc()
 
 # define the working directory again
-working_dir <- "/Users/annanorberg/switchdrive/UZH/Projects/META/meta17network-pkg"
+working_dir <- "/Users/annanorb/Documents/UZH/Projects/META/meta17network-pkg"
 
 setwd(working_dir)
 library("meta17network")
 
 dirs <- set_dirs(working_dir = working_dir)
-#install.packages(c("spMaps", "smoothr"))
+#saveRDS(dirs, file = file.path(working_dir, "dirs.rds"))
 
-dat <- readRDS(file.path(dirs$mod_dat, "dat.rds"))
+# DATA PROCESSING
+dat <- process_data(dirs = dirs,
+                    return_data = TRUE,
+                    save_data = TRUE,
+                    rmNAs = TRUE)
 
 # co-occurrence profiles
 cooccs <- t(dat$Y) %*% as.matrix(dat$Y)
@@ -119,9 +122,9 @@ Y_nest_ord <- dat$Y[, colnames(nest_pops$comm)]
 virus_colrs <- load_colour_palette()
 virus_colrs <- virus_colrs[[1]][1:25]
 # based on species richness and population nestedness, 
-# the two most contrasting populations are 861 and 3222
+# the two most contrasting populations are 861 and 946
 wpop <- "861"
-#wpop <- "3222"
+#wpop <- "946"
 toPLot <- Y_nest_ord[which(dat$X$pop == wpop), ]
 png(file.path(dirs$figs, paste0("viruses_by_plant_pop", wpop, ".png")),
     height = 4, 
@@ -239,6 +242,10 @@ png(file.path(dirs$figs, "co_occs_all_rev1.png"),
              col = "black")
 dev.off()
 
+# single infections (inside brackets next to species names)
+colSums(dat$Y[rowSums(dat$Y) == 1,])
+colSums(dat$Y[rowSums(dat$Y) == 1,]) / colSums(dat$Y)
+
 #&&&&&&&&&&&&&&&&&&&
 
 
@@ -246,8 +253,9 @@ dev.off()
 coinfs <- coinfs_by_pop(Y = dat$Y, 
                         POPs = dat$X$pop, 
                         dirs = dirs, 
-                        pop_lifes = list("861" = NA, "3225" = NA))
+                        pop_lifes = list("861" = NA, "946" = NA))
 saveRDS(coinfs, file = file.path(dirs$fits, "coinfs.rds"))
+
 
 # (coinfections in the full data)
 y_coinfs <- dat$Y
@@ -264,4 +272,5 @@ tmp1[which(tmp1 == "")] <- "No infection"
 all_coinfs <- lapply(tmp1, sort)
 all_coinfs <- table(sort(unlist(all_coinfs)))
 all_coinfs <- all_coinfs[order(all_coinfs)]
+length(all_coinfs)
 # saveRDS(all_coinfs, file = file.path(dirs$fits, "all_coinfs.rds"))

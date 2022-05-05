@@ -10,14 +10,14 @@ library("devtools")
 library("roxygen2")
 
 # you only need to define the directory where you habe cloned the meta17network-pkg repository
-root_dir <- "/Users/annanorberg/switchdrive/UZH/Projects/META/"
+root_dir <- "/Users/annanorb/Documents/UZH/Projects/META/"
 # after this you define the other directories and install the package
 working_dir <- file.path(root_dir, "meta17network-pkg")
 pkg_dir <- file.path(working_dir, "meta17network")
 
 ### create the package
-#setwd(working_dir)
-#create("meta17network")
+# setwd(working_dir)
+# create("meta17network")
 
 ### document the package
 setwd(pkg_dir)

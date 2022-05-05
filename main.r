@@ -2,7 +2,7 @@
 rm(list = ls(all = TRUE)) ; gc()
 
 # define the working directory again
-working_dir <- "/Users/annanorberg/switchdrive/UZH/Projects/META/meta17network-pkg"
+working_dir <- "/Users/annanorb/Documents/UZH/Projects/META/meta17network-pkg"
 
 setwd(working_dir)
 library("meta17network")
@@ -21,13 +21,18 @@ warnings()
 # these warnings are related to the missing covariate data for four plants,
 # which are consequently removed from the final data set for analysis (400 -> 396 plants)
 names(dat)
+lapply(dat, dim)
 
-max(colSums(dat$Y)/nrow(dat$Y)) # max prevalence 34%
-min(colSums(dat$Y)/nrow(dat$Y)) # min prevalence 0.5%
-sum(rowSums(dat$Y) == 0) / nrow(dat$Y) # 29% empty host plants, 71% infected plants
-sum(rowSums(dat$Y) == 1) / nrow(dat$Y) # 32% single infections
-sum(rowSums(dat$Y) > 1) / nrow(dat$Y) # 40% multi-infections
-sum(rowSums(dat$Y) >= 5) / nrow(dat$Y) # 7% multi-infections of more than 5 viruses
+dim(dat$Y)
+dim(dat$Y)[1] * dim(dat$Y)[2]
+head(dat$Y)
+sum(dat$Y) / (dim(dat$Y)[1] * dim(dat$Y)[2])
+max(colSums(dat$Y)/nrow(dat$Y)) # max prevalence
+min(colSums(dat$Y)/nrow(dat$Y)) # min prevalence
+sum(rowSums(dat$Y) == 0) / nrow(dat$Y) # % empty host plants
+sum(rowSums(dat$Y) == 1) / nrow(dat$Y) # % single infections
+sum(rowSums(dat$Y) > 1) / nrow(dat$Y) # % multi-infections
+(sum(rowSums(dat$Y) >= 5) / nrow(dat$Y)) / (sum(rowSums(dat$Y) >= 1) / nrow(dat$Y)) # % multi-infections 5 or more viruses
 
 ### 1 DATA EXPLORATION AND DESCRIPTIVE ANALYSIS ##########################################
 
@@ -35,8 +40,8 @@ sum(rowSums(dat$Y) >= 5) / nrow(dat$Y) # 7% multi-infections of more than 5 viru
 # are done in the stand-alone script 'coinf_plots.r'
 
 # plot virus prevalences
-par(family = "serif", mar = c(8, 3, 1, 1))
-barplot(colSums(dat$Y)[order(colSums(dat$Y))], las = 2, ylim = c(0, 150))
+# par(family = "serif", mar = c(8, 3, 1, 1))
+# barplot(colSums(dat$Y)[order(colSums(dat$Y))], las = 2, ylim = c(0, 280))
 
 # 1.1 Nestedness analysis
 	# local communities are regarded as nested 
@@ -64,6 +69,7 @@ rownames(Y_aggr_pops) <- unique(dat$X$pop)
 nest_pops <- nestednodf(Y_aggr_pops)
 plot(nest_pops, names = TRUE, col = "grey50")
 saveRDS(nest_pops, file = file.path(dirs$fits, "nest_pops.rds"))
+oecosimu(Y_aggr_pops, nestedchecker, "r0", statistic = "C.score")
 
 # C score
 oecosimu(Y_aggr_pops, nestedchecker, "r0", statistic = "C.score")
@@ -76,8 +82,8 @@ for (i in 1:length(pops)) {
 }
 names(nests) <- pops
 #e.g.
-plot(nests[["861"]], names = TRUE, col = "grey50")
-plot(nests[["3222"]], names = TRUE, col = "grey50")
+plot(nests[["861"]], names = TRUE, col = "grey50") # most taxon-rich
+plot(nests[["946"]], names = TRUE, col = "grey50") # least taxon-rich
 
 
 #&&& FIGURE 2B &&&&&
@@ -88,30 +94,40 @@ png(file.path(dirs$figs, "nestedness_bypop.png"),
     units = "in", 
     res = 300)
     par(family = "serif", mar = c(1,3,8,1))
-    plot(nest_pops, names = TRUE, col = "grey50", bty = "n")
+    plot(nest_pops, names = TRUE, col = "grey50", bty = "l")
 dev.off()
 #&&&&&&&&&&&&&&&&&&&&
-
 
 # 1.2 Co-occurrence analysis
 
 # how many times do viruses occur and co-occur?
 incidences <- t(dat$Y) %*% as.matrix(dat$Y)
-incidences["Avsunviroidae","Alphasatellitidae"] # the only pair not co-occurring together
-# hence the maximum amount of co-occurring pairs is 299
+length(which(incidences == 0)) / 2
+# 18 not co-occurring pairs
 
 t_y <- data.frame(t(dat$Y))
 y_ls <- as.list(t_y)
-# number of unique virus combinations
+# number of unique virus combinations 238
 length(unique(y_ls))
 
 # Coexistence and species-area curves
 set.seed(7)
 coexs <- coexistence_curves(Y = dat$Y, 
 							xy = dat$X[, c("x", "y")], 
-							sample_ids = dat$X[, "sampleID"], 
+							sample_ids = dat$X[, "sample_ID"], 
 							dirs = dirs, 
 							nsim = 100)
+names(coexs)
+# all species were encountered when 275 plants were sampled
+which(round(rowMeans(coexs[[3]]), 1) == ncol(dat$Y), arr.ind = TRUE)[1]
+# all coexistences were encountered when 319 plants were sampled
+which(round(rowMeans(coexs[[1]]), 1) == max(rowMeans(coexs[[1]])), arr.ind = TRUE)[1]
+
+# where are we at when 100 plants have been sampled?
+rowMeans(coexs[[1]])[100]
+rowMeans(coexs[[3]])[100]
+((21^2) - 21) / 2
+((25^2) - 25) / 2
 
 #&&& FIGURE 3B &&&&&
 # coexistence mean curve
@@ -128,7 +144,7 @@ png(file.path(dirs$figs, "coex_mean_curve.png"),
          ylab = "", 
          xlab = "",
          yaxt = "n",
-         ylim = c(0, 300))
+         ylim = c(0, ((ncol(dat$Y)^2)-ncol(dat$Y))/2))
     lines(y = rowMeans(coexs[[1]]),
           x = 1:nrow(coexs[[1]]),
           lwd = 2)
@@ -137,7 +153,7 @@ png(file.path(dirs$figs, "coex_mean_curve.png"),
           lwd = 2,
           col = "grey",
           lty = 2)
-	axis(4, at = c(10, 50, 100, 300), las = 2)
+	axis(4, at = c(10, 50, 100, 282, 300), las = 2)
 dev.off()
 
 # species-area accumulation curve
@@ -155,37 +171,38 @@ png(file.path(dirs$figs, "sp_area_mean_curve.png"),
          ylab = "", 
          xlab = "",
          yaxt = "n",
-         ylim = c(0, 25))
+         ylim = c(0, ncol(dat$Y)))
     lines(y = rowMeans(coexs[[3]]),
           x = 1:nrow(coexs[[3]]),
           lwd = 2,
           lty = 3)
-	axis(2, at = c(5, 10, 15, 25), las = 2)
+	axis(2, at = c(5, 10, 15, ncol(dat$Y)), las = 2)
 dev.off()
 #&&&&&&&&&&&&&&&&&&&&
 
 # all simulated coexistence curves
-curve_type <- 1
-png(file.path(dirs$figs, paste0("coex", curve_type, "_all_curves.png")),
-    height = 4, 
-    width = 7, 
-    bg = "transparent",
-    units = "in", 
-    res = 300)
-    par(family = "serif", mar = c(3,3,1,1))
-    plot(y = coexs[[curve_type]][,1], x = 1:nrow(coexs[[curve_type]]), 
-         type = "l",
-         lwd = 1.5,
-         lty = 3, 
-         ylab = "", 
-         xlab = "")
-	for (i in 2:ncol(coexs[[curve_type]])) {
-		lines(y = coexs[[curve_type]][,i], 
-		x = 1:nrow(coexs[[curve_type]]),
-		lwd = 1.5)
-	}
-dev.off()
-
+#curve_type <- 1
+for (curve_type in 1:length(coexs)) {
+	png(file.path(dirs$figs, paste0("coex", curve_type, "_all_curves.png")),
+		height = 4, 
+		width = 7, 
+		bg = "transparent",
+		units = "in", 
+		res = 300)
+		par(family = "serif", mar = c(3,3,1,1))
+		plot(y = coexs[[curve_type]][,1], x = 1:nrow(coexs[[curve_type]]), 
+			 type = "l",
+			 lwd = 1.5,
+			 lty = 3, 
+			 ylab = "", 
+			 xlab = "")
+		for (i in 2:ncol(coexs[[curve_type]])) {
+			lines(y = coexs[[curve_type]][,i], 
+			x = 1:nrow(coexs[[curve_type]]),
+			lwd = 1.5)
+		}
+	dev.off()
+}
 
 # 2 DATA PROCESSING FOR MRF and CRFs, Moran's eigenvectors ###############################
 
@@ -201,7 +218,7 @@ dat1 <- dat
 dat1$Y <- dat1$Y[, sp_subset]
 y <- as.matrix(dat1$Y)
 y_cocs <- t(y) %*% y
-
+dim(y)
 
 ### X
 x <- as.data.frame(dat1$X)
@@ -237,11 +254,11 @@ mor_plants <- dbmem(x_spat[, c("x", "y")],
 # test the significance of the eigenvectors
 #mor_test <- moran.randtest(mor_plants, listw = attr(mor_plants, "listw"))
 mor_test <- apply(mor_plants, 2, moran.mc, listw = attr(mor_plants, "listw"), nsim = 999)
-# we select the vectors with > 0.7 statistic (coarse scale) 
-# and the last significant one (fine scale)
-vecs <- c(1:3, 9)
-mems_sel <- mor_plants[, vecs]
-lapply(apply(mems_sel, 2, unique), length)
+# we select three significant vectors representing different spatial scales
+mor_test_sig <- mor_test[which(lapply(mor_test, "[[", "p.value") <= 0.05)]
+sel_vecs <- round(seq(1, length(mor_test_sig), length.out = 4))
+mems_sel <- mor_plants[, sel_vecs]
+apply(mems_sel, 2, function(x) { length(unique(x)) })
 
 # &&& FIGURE S3 &&&&&
 png(file.path(dirs$figs,
@@ -266,7 +283,7 @@ png(file.path(dirs$figs,
 			 col = pointscols2, 
 			 bg = pointscols, 
 			 cex = abs(mems_sel[,i]) + 0.25, 
-			 main = paste("MEM", vecs[i]),
+			 main = paste("MEM", sel_vecs[i]),
 			 xlab = "",
 			 ylab = "",
 			 pch = 22)
@@ -278,12 +295,12 @@ x_and_mems <- as.data.frame(cbind(x_nums_scaled, x_bools, mems_sel))
 
 # check for correlations
 var_cors <- cor(x_and_mems, use = "na.or.complete")
-max(var_cors[upper.tri(var_cors, diag = FALSE)]) # highest correlation 0.57
+max(var_cors[upper.tri(var_cors, diag = FALSE)]) # highest correlation 0.51
 which(var_cors == max(var_cors[upper.tri(var_cors, diag = FALSE)]), arr.ind = TRUE)
 
 # final data frames
 data_df <- as.data.frame(cbind(y, cbind(x_nums_scaled, x_bools)))
-data_host_df <- data_habi_df <- data_df[, c(1:16)]
+data_host_df <- data_habi_df <- data_df[, c(1:ncol(y))]
 data_host_df <- cbind(data_host_df, 
 					  data_df[, c("plant_size", 
 					  			  "moth", 
@@ -302,8 +319,6 @@ data_mems_df <- as.data.frame(cbind(y, x_and_mems))
 data_only_mems_df <- as.data.frame(cbind(y, mems_sel))
 
 
-
-
 # 3 (CONDITIONAL) MARKOV RANDOM FIELDS, (C)MRF ###########################################
 library(MRFcov)
 
@@ -317,25 +332,25 @@ saveRDS(mrf1, file = file.path(dirs$fits, "mrf1.rds"))
 # 3.2.1 Non-spatial CRF
 
 ### with all environmental variables
-crf1 <- MRFcov(data_df, family = "binomial", n_nodes = 16)
+crf1 <- MRFcov(data_df, family = "binomial", n_nodes = ncol(y))
 saveRDS(crf1, file = file.path(dirs$fits, "crf1.rds"))
 
 ### with only host variables
-crf1_host <- MRFcov(data_host_df, family = "binomial", n_nodes = 16)
+crf1_host <- MRFcov(data_host_df, family = "binomial", n_nodes = ncol(y))
 saveRDS(crf1_host, file = file.path(dirs$fits, "crf1_host.rds"))
 
 ### with only habitat variables
-crf1_habi <- MRFcov(data_habi_df, family = "binomial", n_nodes = 16)
+crf1_habi <- MRFcov(data_habi_df, family = "binomial", n_nodes = ncol(y))
 saveRDS(crf1_habi, file = file.path(dirs$fits, "crf1_habi.rds"))
 
 # 3.2.2 Spatial CRF with Morans' eigenvectors
 
 ### only MEMs
-crf1_only_mem <- MRFcov(data_only_mems_df, family = "binomial", n_nodes = 16)
+crf1_only_mem <- MRFcov(data_only_mems_df, family = "binomial", n_nodes = ncol(y))
 saveRDS(crf1_only_mem, file = file.path(dirs$fits, "crf1_only_mem.rds"))
 
 ### with environment
-crf1_mem <- MRFcov(data_mems_df, family = "binomial", n_nodes = 16)
+crf1_mem <- MRFcov(data_mems_df, family = "binomial", n_nodes = ncol(y))
 saveRDS(crf1_mem, file = file.path(dirs$fits, "crf1_mem.rds"))
 
 # 3.3 Predictions
@@ -380,14 +395,16 @@ aucs
 # CRF is better than just MRF, but there is no big difference
 # whether one includes spatial predictors and/or landscape and/or host variables
 
-# 3.4.2 Cross-validation
+# 3.4.2 Cross-validation and bootstrapping
+nFolds <- 10
+nCores <- 4
 
 # environment and MEMs
 crf_env_mems_cv <- lapply(seq_len(100), 
                           function(x) { cv_MRF_diag(data = data_mems_df, 
-                                                    n_nodes = 16, 
-                                                    n_folds = 4, 
-                                                    n_cores = 1, 
+                                                    n_nodes = ncol(y), 
+                                                    n_folds = nFolds, 
+                                                    n_cores = nCores, 
                                                     family = "binomial", 
                                                     compare_null = FALSE, 
                                                     plot = FALSE, 
@@ -400,9 +417,9 @@ crf_env_and_mems_cv <- do.call(rbind, crf_env_mems_cv)
 # only MEMs
 crf_only_mems_cv <- lapply(seq_len(100), 
                            function(x) { cv_MRF_diag(data = data_only_mems_df, 
-                                                     n_nodes = 16, 
-                                                     n_folds = 4, 
-                                                     n_cores = 1, 
+                                                     n_nodes = ncol(y), 
+                                                     n_folds = nFolds, 
+                                                     n_cores = nCores, 
                                                      family = "binomial", 
                                                      compare_null = FALSE, 
                                                      plot = FALSE, 
@@ -415,9 +432,9 @@ crf_only_mems_cv <- do.call(rbind, crf_only_mems_cv)
 # only env
 crf_only_env_cv <- lapply(seq_len(100), 
                          function(x) { cv_MRF_diag(data = data_df, 
-                                                   n_nodes = 16, 
-                                                   n_folds = 4, 
-                                                   n_cores = 1, 
+                                                   n_nodes = ncol(y), 
+                                                   n_folds = nFolds, 
+                                                   n_cores = nCores, 
                                                    family = "binomial", 
                                                    compare_null = FALSE, 
                                                    plot = FALSE, 
@@ -430,9 +447,9 @@ crf_only_env_cv <- do.call(rbind, crf_only_env_cv)
 # only host
 crf_only_host_cv <- lapply(seq_len(100), 
                            function(x) { cv_MRF_diag(data = data_host_df, 
-                                                     n_nodes = 16, 
-                                                     n_folds = 4, 
-                                                     n_cores = 1, 
+                                                     n_nodes = ncol(y), 
+                                                     n_folds = nFolds, 
+                                                     n_cores = nCores, 
                                                      family = "binomial", 
                                                      compare_null = FALSE, 
                                                      plot = FALSE, 
@@ -445,9 +462,9 @@ crf_only_host_cv <- do.call(rbind, crf_only_host_cv)
 # only habi
 crf_only_habi_cv <- lapply(seq_len(100), 
                            function(x) { cv_MRF_diag(data = data_habi_df, 
-                                                     n_nodes = 16, 
-                                                     n_folds = 4, 
-                                                     n_cores = 1, 
+                                                     n_nodes = ncol(y), 
+                                                     n_folds = nFolds, 
+                                                     n_cores = nCores, 
                                                      family = "binomial", 
                                                      compare_null = FALSE, 
                                                      plot = FALSE, 
@@ -460,9 +477,9 @@ crf_only_habi_cv <- do.call(rbind, crf_only_habi_cv)
 # MRF
 mrf_cv <- lapply(seq_len(100), 
                  function(x) { cv_MRF_diag(data = data_df, 
-                                           n_nodes = 16, 
-                                           n_folds = 4, 
-                                           n_cores = 1, 
+										   n_nodes = ncol(y), 
+										   n_folds = nFolds, 
+										   n_cores = nCores, 
                                            family = "binomial", 
                                            compare_null = FALSE, 
                                            plot = FALSE, 
@@ -481,6 +498,7 @@ cv_res <- list("env_and_mems" = crf_env_and_mems_cv,
 saveRDS(cv_res, file = file.path(dirs$fits, "cv_res.rds"))
 
 cv_res <- readRDS(file = file.path(dirs$fits, "cv_res.rds"))
+
 lapply(cv_res, apply, 2, quantile, probs = c(0.025, 0.5, 0.975), na.rm = TRUE)
 #pos_pred = the proportion of true positives out of all predicted positives
 #sensitivity = prop. of true positives out of all real positives
@@ -503,7 +521,7 @@ lapply(cv_res, apply, 2, quantile, probs = c(0.025, 0.5, 0.975), na.rm = TRUE)
 
 sampleProp <- 1
 nBoot <- 100
-nodes <- 16
+nodes <- ncol(y)
 
 # MRF
 bootedMRF <- bootstrap_MRF(as.data.frame(y),
@@ -599,14 +617,14 @@ tmp <- plotMRF_hm(MRF_mod = booted_models$CRF_env_mems,
 # association significances (does the 90% interval overlap with zero?)
 significances <- list()
 for (i in 1:length(booted_models)) {
-    significances[[i]] <- (sign(booted_models[[i]]$direct_coef_upper90) + sign(booted_models[[i]]$direct_coef_lower90))[,1:nodes]
+    significances[[i]] <- (sign(booted_models[[i]]$direct_coef_upper90) + sign(booted_models[[i]]$direct_coef_lower90))[, 2:(nodes + 1)]
 }
 names(significances) <- names(booted_models)
 
 # mean associations
 associations <- list()
 for (i in 1:length(booted_models)) {
-    associations[[i]] <- booted_models[[i]]$direct_coef_means[1:nodes, 2:(nodes + 1)]
+    associations[[i]] <- booted_models[[i]]$direct_coef_means[, 2:(nodes + 1)]
 }
 names(associations) <- names(booted_models)
 # round to one decimal to get rid of very small values
@@ -624,7 +642,7 @@ for (i in 1:length(associations_sig)) {
     print(all(asss[which((asss != 0) + (t(asss) != 0) == 2)] == t(asss)[which((asss != 0) + (t(asss) != 0) == 2)]))
 }
 
-# make the association matrix symmetric
+# check if the association matrix is symmetric
 ass_sig_symm <- associations_sig
 for (i in 1:length(ass_sig_symm)) {
     for (k in 1:nrow(ass_sig_symm[[i]])) {
@@ -634,10 +652,11 @@ for (i in 1:length(ass_sig_symm)) {
                     print(c(i,
                     		ass_sig_symm[[i]][k,j],
                             ass_sig_symm[[i]][j,k]))
-                    ass_sig_symm[[i]][k,j] <- ass_sig_symm[[i]][k,j] + ass_sig_symm[[i]][j,k]
-                    ass_sig_symm[[i]][j,k] <- ass_sig_symm[[i]][k,j]
+#                     ass_sig_symm[[i]][k,j] <- ass_sig_symm[[i]][k,j] + ass_sig_symm[[i]][j,k]
+#                     ass_sig_symm[[i]][j,k] <- ass_sig_symm[[i]][k,j]
                 }
             }
+
         }
     }
 }
@@ -673,6 +692,7 @@ perm_assoc <- ass_sig_symm$CRF_env_mems
 perm_assoc[which(assoc_sum != 6, arr.ind = TRUE)] <- 0
 perm_assoc_cleared <- perm_assoc
 perm_assoc_cleared[upper.tri(perm_assoc_cleared)] <- 0
+sum(perm_assoc_cleared > 0)
 
 # comparison to phylogeny
 phyl <- ape::keep.tip(dat$phylogeny, colnames(nonzero_assocs[[1]]))
@@ -691,20 +711,20 @@ vegan::mantel(xdis = dist(perm_assoc), ydis = dist(phylmat))
 # create adjacency matrices for plotting the networks
 ass_for_adj <- ass_sig_symm_cleared
 for (i in 1:length(ass_for_adj)) {
-	colnames(ass_for_adj[[i]]) <- sub(pattern = "viridae", 
-									  replacement = "", 
-									  colnames(ass_for_adj[[i]]))
-	colnames(ass_for_adj[[i]]) <- sub(pattern = "viroidae", 
-									  replacement = "", 
-									  colnames(ass_for_adj[[i]]))
-	rownames(ass_for_adj[[i]]) <- sub(pattern = "viridae", 
-									  replacement = "", 
-									  rownames(ass_for_adj[[i]]))
-	rownames(ass_for_adj[[i]]) <- sub(pattern = "viroidae", 
-									  replacement = "", 
-									  rownames(ass_for_adj[[i]]))
+	rownames(ass_for_adj[[i]]) <- colnames(ass_for_adj[[i]]) <- sub(pattern = "viridae", 
+																	replacement = "", 
+																	colnames(ass_for_adj[[i]]))
+	rownames(ass_for_adj[[i]]) <- colnames(ass_for_adj[[i]]) <- sub(pattern = "viroidae", 
+																	replacement = "", 
+																	colnames(ass_for_adj[[i]]))
 }
-
+rownames(perm_assoc) <- colnames(perm_assoc) <- sub(pattern = "viridae", 
+													replacement = "", 
+													colnames(perm_assoc))
+rownames(perm_assoc) <- colnames(perm_assoc) <- sub(pattern = "viroidae", 
+													replacement = "", 
+													colnames(perm_assoc))
+								  
 # create adjacency matrices and delete edges that represent very weak interactions
 adj_mats <- list()
 for (i in 1:length(ass_for_adj)) {
@@ -740,24 +760,22 @@ for (i in 1:length(adj_mats)) {
 names(vert_lab_deg) <- names(adj_mats)
 
 # plotting settings
-vert_lab_deg[["MRF"]][which(igraph::vertex_attr(adj_mats[["MRF"]])$name == "Betaflexi")] <- pi/2
-vert_lab_deg[["MRF"]][which(igraph::vertex_attr(adj_mats[["MRF"]])$name == "Bromo")] <- pi/2
 vert_lab_deg[["MRF"]][which(igraph::vertex_attr(adj_mats[["MRF"]])$name == "Alphaflexi")] <- pi/2
-vert_lab_deg[["MRF"]][which(igraph::vertex_attr(adj_mats[["MRF"]])$name == "Poty")] <- pi/2
-vert_lab_deg[["MRF"]][which(igraph::vertex_attr(adj_mats[["MRF"]])$name == "Partiti")] <- pi/2
-vert_lab_deg[["CRF_host"]][which(igraph::vertex_attr(adj_mats[["CRF_host"]])$name == "Poty")] <- pi/2
-vert_lab_deg[["CRF_habi"]][which(igraph::vertex_attr(adj_mats[["CRF_habi"]])$name == "Gemini")] <- 90
-vert_lab_deg[["CRF_habi"]][which(igraph::vertex_attr(adj_mats[["CRF_habi"]])$name == "Tombus")] <- pi/2
-vert_lab_deg[["CRF_mems"]][which(igraph::vertex_attr(adj_mats[["CRF_mems"]])$name == "Bromo")] <- 90
-vert_lab_deg[["CRF_mems"]][which(igraph::vertex_attr(adj_mats[["CRF_mems"]])$name == "Luteo")] <- pi/2
-vert_lab_deg[["CRF_mems"]][which(igraph::vertex_attr(adj_mats[["CRF_mems"]])$name == "Gemini")] <- pi/2
-vert_lab_deg[["CRF_mems"]][which(igraph::vertex_attr(adj_mats[["CRF_mems"]])$name == "Partiti")] <- pi/2
-vert_lab_deg[["CRF_mems"]][which(igraph::vertex_attr(adj_mats[["CRF_mems"]])$name == "Tombus")] <- pi/2
-vert_lab_deg[["CRF_mems"]][which(igraph::vertex_attr(adj_mats[["CRF_mems"]])$name == "Alphaflexi")] <- pi/2
-vert_lab_deg[["CRF_env"]][which(igraph::vertex_attr(adj_mats[["CRF_env"]])$name == "Tombus")] <- pi/2
-vert_lab_deg[["CRF_env_mems"]][which(igraph::vertex_attr(adj_mats[["CRF_env_mems"]])$name == "Tombus")] <- pi/2
 
+vert_lab_deg[["CRF_env_mems"]][which(igraph::vertex_attr(adj_mats[["CRF_env_mems"]])$name == "Pospi")] <- pi/2
+vert_lab_deg[["CRF_env_mems"]][which(igraph::vertex_attr(adj_mats[["CRF_env_mems"]])$name == "Seco")] <- pi/4
+vert_lab_deg[["CRF_env_mems"]][which(igraph::vertex_attr(adj_mats[["CRF_env_mems"]])$name == "Gemini")] <- pi/2
+vert_lab_deg[["CRF_env_mems"]][which(igraph::vertex_attr(adj_mats[["CRF_env_mems"]])$name == "Bromo")] <- pi/2
+vert_lab_deg[["CRF_env_mems"]][which(igraph::vertex_attr(adj_mats[["CRF_env_mems"]])$name == "Metaxy")] <- pi/2
 
+vert_lab_deg[["permanent"]][which(igraph::vertex_attr(adj_mats[["permanent"]])$name == "Bromo")] <- pi/2
+vert_lab_deg[["permanent"]][which(igraph::vertex_attr(adj_mats[["permanent"]])$name == "Alphaflexi")] <- pi/2
+vert_lab_deg[["permanent"]][which(igraph::vertex_attr(adj_mats[["permanent"]])$name == "Metaxy")] <- pi/2
+vert_lab_deg[["permanent"]][which(igraph::vertex_attr(adj_mats[["permanent"]])$name == "Avsun")] <- pi/2
+vert_lab_deg[["permanent"]][which(igraph::vertex_attr(adj_mats[["permanent"]])$name == "Rhabdo")] <- pi/2
+# vert_lab_deg[["CRF_mems"]][which(igraph::vertex_attr(adj_mats[["CRF_mems"]])$name == "Bromo")] <- 90
+
+names(adj_mats)
 #&&& FIGURE 4A-B, F in main text &&&&&
 # create subdirectory for igraphs
 dir.create(file.path(dirs$figs, "igraphs"))
@@ -772,7 +790,7 @@ for (i in 1:length(adj_mats)) {
         units = "in", 
         res = 500)
         par(mar = c(1, 4, 1, 10), family = "serif")
-        set.seed(73)
+        set.seed(77)
         plot(adj_mats[[i]], 
              edge.curved = 0.4,
              vertex.size = 6,
@@ -793,7 +811,6 @@ for (i in 1:length(adj_mats)) {
 library(NetComp)
 
 # returns a matrix containing edges present in matrix1 that are not present in matrix2
-names(ass_sig_symm_cleared)
 host_effect <- netDiff(matrix1 = ass_sig_symm_cleared$CRF_habi, 
                        matrix2 = ass_sig_symm_cleared$CRF_env_mems, 
                        cutoff = 0.05)
@@ -831,7 +848,7 @@ for (i in 1:length(adj_mats_diffs)) {
 												   weighted = TRUE, 
 												   mode = "undirected")
 }
-                             
+
 # create adjacency matrices for plotting the networks
 for (i in 1:length(adj_mats_diffs)) {
     # delete edges that represent weak interactions
@@ -858,26 +875,22 @@ for (i in 1:length(adj_mats_diffs)) {
 names(vert_lab_deg) <- names(adj_mats_diffs)
 
 # plotting settings
-vert_lab_deg[["habi"]][which(igraph::vertex_attr(adj_mats_diffs[["habi"]])$name == "Alphaflexi")] <- 0
-vert_lab_deg[["habi"]][which(igraph::vertex_attr(adj_mats_diffs[["habi"]])$name == "Betaflexi")] <- pi
-vert_lab_deg[["habi"]][which(igraph::vertex_attr(adj_mats_diffs[["habi"]])$name == "Partiti")] <- pi/2
-vert_lab_deg[["habi"]][which(igraph::vertex_attr(adj_mats_diffs[["habi"]])$name == "Tombus")] <- pi/2
-vert_lab_deg[["habi"]][which(igraph::vertex_attr(adj_mats_diffs[["habi"]])$name == "Luteo")] <- pi/2
+#vert_lab_deg[["env"]][which(igraph::vertex_attr(adj_mats_diffs[["env"]])$name == "Solemo")] <- pi/2
+
+names(adj_mats_diffs)
 
 #&&& FIGURE 4C-E in main text &&&&&
 for (i in 1:length(adj_mats_diffs)) {
-quartz()
-#     png(file.path(dirs$figs,
-#     			  "igraphs",
-#                   paste0("igraph_", names(adj_mats_diffs)[i], "_effect.png")), 
-#         height = 8, 
-#         width = 8, 
-#         bg = "transparent",
-#         units = "in", 
-#         res = 500)
+    png(file.path(dirs$figs,
+    			  "igraphs",
+                  paste0("igraph_", names(adj_mats_diffs)[i], "_effect.png")), 
+        height = 8, 
+        width = 8, 
+        bg = "transparent",
+        units = "in", 
+        res = 500)
         par(mar = c(1, 4, 1, 10), family = "serif")
-        set.seed(73)
-        #set.seed(10)
+        set.seed(77)
         plot(adj_mats_diffs[[i]], 
              edge.curved = 0.4,
              edge.lty = 2,
@@ -891,7 +904,7 @@ quartz()
 			 vertex.label.degree = vert_lab_deg[[i]],
              #layout = igraph::layout.circle,
              label = TRUE)
-#     dev.off()
+    dev.off()
 }
 # &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
@@ -899,8 +912,9 @@ quartz()
 mod <- booted_models$CRF_env_mems
 
 names(mod)
-cov_inds <- c(1, 18:31)
 colnames(mod$direct_coef_means)
+cov_inds <- c(1, (nodes + 2):(nodes + 17))
+colnames(mod$direct_coef_means)[cov_inds]
 mod$direct_coef_means[, cov_inds]
 
 signs <- sign(mod$direct_coef_upper90) + sign(mod$direct_coef_lower90)
@@ -914,11 +928,11 @@ cbind(rownames(mod$direct_coef_means)[sigs[,1]],
 sig_direct_env_effects <- cbind(rownames(mod$direct_coef_means)[sigs[,1]], 
                                 colnames(mod$direct_coef_means)[sigs[,2]], 
                                 round(mod$direct_coef_means[sigs], 2))
+
 write.table(sig_direct_env_effects,
             file = file.path(dirs$fits,"direct_sig_env_effs.csv"),
             quote = FALSE,
             sep = ";",
-            dec = ".")            
-
+            dec = ".")
 
 ##########################################################################################
