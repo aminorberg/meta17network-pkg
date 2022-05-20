@@ -8,7 +8,7 @@ Authors@R:
            email = "norberg.ami@gmail.com",
            comment = c(ORCID = "0000-0002-3520-1043"))
 Description: A package for analysing wild virus communities hosted by natural populations of Plantago lanceolata with Conditional Random Fields.
-Imports:
+Suggests:
 	vegan,
 	betapart,
 	corrplot,
@@ -16,12 +16,12 @@ Imports:
 	spdep,
 	MRFcov,
 	ape,
-	NetComp,
-    dummies,
     devtools,
     caret,
-    dplyr
+    dplyr,
+    dummies,
+	NetComp	
 License: GPL (>= 2)
 LazyData: true
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.0
 Encoding: UTF-8
