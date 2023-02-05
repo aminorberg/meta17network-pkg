@@ -4,6 +4,8 @@ A pipeline, related data and an R-package wrapping these up for analysing
 the meta17-project virus community data of wild Plantago lanceolata populations in the
 Åland Island, Finland. 
 
+[![DOI](https://zenodo.org/badge/282894553.svg)](https://zenodo.org/badge/latestdoi/282894553)
+
 ## Installing meta17network
 
 ```{r}
